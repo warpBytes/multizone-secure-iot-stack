@@ -225,6 +225,8 @@ static inline uint64_t long_long_be(uint64_t le)
 # include "arch/pico_none.h"
 #elif defined GENERIC
 # include "arch/pico_generic_gcc.h"
+#elif defined RV32
+# include "arch/pico_rv32.h"
 #elif defined __KERNEL__
 # include "arch/pico_linux.h"
 /* #elif defined ... */

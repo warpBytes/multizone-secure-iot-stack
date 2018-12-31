@@ -219,6 +219,10 @@ ifeq ($(ARCH),atmega128)
   CFLAGS+=-Wall -mmcu=atmega128 -DAVR
 endif
 
+ifeq ($(ARCH),rv32)
+  CFLAGS+=-march=rv32imac -mabi=ilp32 -mcmodel=medany -DRV32
+endif
+
 ifeq ($(ARCH),none)
   CFLAGS+=-DARCHNONE
 endif
