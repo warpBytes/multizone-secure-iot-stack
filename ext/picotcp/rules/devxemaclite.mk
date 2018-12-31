@@ -1,0 +1,2 @@
+OPTIONS+=-DPICO_SUPPORT_DEV_XEMACLITE
+MOD_OBJ+=$(LIBBASE)modules/pico_dev_xemaclite.o

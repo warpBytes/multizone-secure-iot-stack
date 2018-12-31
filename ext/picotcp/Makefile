@@ -38,6 +38,7 @@ NAT?=1
 ICMP4?=1
 MCAST?=1
 DEVLOOP?=1
+DEVXEMACLITE?=0
 PING?=1
 DHCP_CLIENT?=1
 DHCP_SERVER?=1
@@ -279,6 +280,9 @@ ifneq ($(NAT),0)
 endif
 ifneq ($(DEVLOOP),0)
   include rules/devloop.mk
+endif
+ifneq ($(DEVXEMACLITE),0)
+  include rules/devxemaclite.mk
 endif
 ifneq ($(DHCP_CLIENT),0)
   include rules/dhcp_client.mk
