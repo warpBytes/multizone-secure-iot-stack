@@ -1,0 +1,6 @@
+[submodule "ext/picotcp"]
+	path = ext/picotcp
+	url = https://github.com/tass-belgium/picotcp.git
+[submodule "ext/wolfssl"]
+	path = ext/wolfssl
+	url = https://github.com/wolfSSL/wolfssl.git
