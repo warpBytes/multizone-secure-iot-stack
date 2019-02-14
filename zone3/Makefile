@@ -10,8 +10,8 @@ LINKER_SCRIPT := flash.lds
 
 C_SRCS += main.c 
 
-INCLUDES += -I../libhexfive
-LDFLAGS += -L../libhexfive
+INCLUDES += -I../ext/multizone
+LDFLAGS += -L../ext/multizone
 LDFLAGS += $(if $(findstring rv64, $(RISCV_ARCH)), -lhexfive64, -lhexfive32)
 
 include $(NEWLIB_DIR)/newlib.mk
