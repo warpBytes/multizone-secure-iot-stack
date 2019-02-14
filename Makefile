@@ -60,7 +60,9 @@ all:
 	$(MAKE) -C zone2 IPADDR="$(IPADDR)" NETMASK="$(NETMASK)" MZMSG_CHARS="$(MZMSG_CHARS)"
 	$(MAKE) -C zone3
 	$(MAKE) -C zone4
-	java -jar multizone.jar -c bsp/$(BOARD)/multizone.cfg zone1/zone1.hex zone2/zone2.hex zone3/zone3.hex zone4/zone4.hex --arch=$(BOARD)
+	cp ext/multizone/multizone.jar .
+	cp bsp/$(BOARD)/multizone.cfg .
+	java -jar multizone.jar -c multizone.cfg zone1/zone1.hex zone2/zone2.hex zone3/zone3.hex zone4/zone4.hex --arch=$(BOARD)
 
 .PHONY: clean
 clean: 
@@ -69,6 +71,8 @@ clean:
 	$(MAKE) -C zone3 clean
 	$(MAKE) -C zone4 clean
 	rm -f multizone.hex
+	rm -f multizone.jar
+	rm -f multizone.cfg
 
 
 #############################################################

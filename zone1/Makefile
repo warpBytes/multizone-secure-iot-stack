@@ -16,7 +16,7 @@ LINKER_SCRIPT := flash.lds
 C_SRCS += main.c mzmsg.c cli.c robot.c
 HEADERS += FreeRTOSConfig.h mzmsg.h cli.h robot.h
 
-FREERTOS_SRC_DIR := ./Source
+FREERTOS_SRC_DIR := ../ext/freertos/Source
 C_SRCS += \
 	$(FREERTOS_SRC_DIR)/croutine.c \
 	$(FREERTOS_SRC_DIR)/event_groups.c \
@@ -36,8 +36,8 @@ INCLUDES = \
 	-I$(FREERTOS_SRC_DIR)/portable/GCC/RISCV 
 
 
-INCLUDES += -I../libhexfive
-LDFLAGS += -L../libhexfive
+INCLUDES += -I../ext/multizone
+LDFLAGS += -L../ext/multizone
 LDFLAGS += $(if $(findstring rv64, $(RISCV_ARCH)), -lhexfive64, -lhexfive32)
 
 include $(NEWLIB_DIR)/newlib.mk
