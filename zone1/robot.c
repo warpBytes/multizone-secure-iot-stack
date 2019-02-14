@@ -271,6 +271,9 @@ void robotTask( void *pvParameters )
 	uint64_t cmd_timer=0, ping_timer=0;
 	uint32_t rx_data = 0, usb_state = 0;
 
+	// Stop motors in case of zone restart
+	rx_data = spi_rw(CMD_STOP);
+
 	while(1){
 
 		//int msg[4]={0,0,0,0}; ECALL_RECV(4, msg);
