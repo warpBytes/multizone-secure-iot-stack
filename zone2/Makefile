@@ -35,7 +35,7 @@ include $(NEWLIB_DIR)/newlib.mk
 picotcp:
 	cd $(PICOTCP_SRC_DIR) && $(MAKE) clean
 	cd $(PICOTCP_SRC_DIR) && $(MAKE) \
-		CROSS_COMPILE:=riscv64-unknown-elf- \
+		CROSS_COMPILE=$(abspath $(RISCV))/bin/riscv64-unknown-elf- \
 		ARCH=rv32 \
 		STRIP=0 \
 		DEBUG=0 \
