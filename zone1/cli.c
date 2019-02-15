@@ -465,6 +465,10 @@ void cliTask( void *pvParameters){
 
 		} else if (tk1 != NULL && strcmp(tk1, "send")==0){
 			if (tk2 != NULL && tk2[0]>='1' && tk2[0]<='4' && tk3 != NULL){
+				if(tk2[0]=='1'){
+					sprintf(print_buffer, "Z1 > %c \r\n", tk3[0]);
+					mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+				}
 				msg[0]=(unsigned int)*tk3; msg[1]=0; msg[2]=0; msg[3]=0;
 				ECALL_SEND(tk2[0]-'0', msg);
 			} else {
