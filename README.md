@@ -1,4 +1,4 @@
-# MultiZone Secure IoT Stack - the First Secure IoT Stack for RISC-V
+# MultiZone Secure IoT Stack
 
 Open Source Software for Developing Secure Applications on RISC-V processors using Hex Five's MultiZone Security Trusted Execution Environment.
 
