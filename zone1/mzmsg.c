@@ -2,6 +2,7 @@
 
 #include <mzmsg.h>
 #include <string.h>
+#include <libhexfive.h>
 
 #define ACK    0
 #define IND    1
