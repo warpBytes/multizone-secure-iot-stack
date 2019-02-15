@@ -10,16 +10,21 @@ static char print_buffer[PRINT_BUFFER_SIZE] = "";
 static const char welcome_msg[] =
 	"\e[2J\e[H" // clear terminal screen
 	"======================================================================\r\n"
-	"     	       Hex Five MultiZone(TM) Security v.0.1.1\r\n"
-	"    Copyright (C) 2018 Hex Five Security Inc. All Rights Reserved\r\n"
-	"======================================================================\r\n"
-	" This version of MultiZone(TM) is meant for evaluation purposes only.\r\n"
-	" As such, use of this software is governed by your Evaluation License.\r\n"
-	" There may be other functional limitations as described in the\r\n"
-	" evaluation kit documentation. The full version of the software does\r\n"
-	" not have these restrictions.\r\n"
+	"     	                 FreeRTOS Kernel V10.1.1\r\n"
+	"     	   LEDs and Robot Control with Command-line interface\r\n"
 	"======================================================================\r\n"
 ;
+
+static const char taskinfo_msg[] =
+	" \r\nTasks\t    Priority	  	Description\r\n"
+	"****************************************************\r\n"
+	"cliTask        	1	Command-line interface Task\r\n"
+	"robotTask      	1	Robot Control Task\r\n"
+	"ledFadeTask    	2	LED Fade Task1\r\n"
+	"IDLE           	0	Idle\r\n"
+;
+
+
 
 static mzmsg_t zone2;
 
@@ -397,9 +402,9 @@ void cliTask( void *pvParameters){
     char c = 0;
 	mzmsg_init(&zone2, 2);
 
-    mzmsg_write(&zone2, welcome_msg, sizeof(welcome_msg));
+    mzmsg_write(&zone2, (char *) welcome_msg, sizeof(welcome_msg));
     print_cpu_info();
-	mzmsg_write(&zone2, "\r\nFreeRTOS CLI\r\n",16);
+    mzmsg_write(&zone2, (char *) taskinfo_msg, sizeof(taskinfo_msg));
 
     char cmd_line[CMD_LINE_SIZE+1]="";
 	int msg[4]={0,0,0,0};
