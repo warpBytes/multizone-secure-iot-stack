@@ -5,8 +5,8 @@ OUTPUT_ARCH( "riscv" )
 ENTRY( _start )
 
 MEMORY {
-  flash (rxai!w) : ORIGIN = 0x20420000, LENGTH = 64K
-  ram   (wxa!ri) : ORIGIN = 0x80005000, LENGTH = 16K
+  flash (rxai!w) : ORIGIN = 0x20420000, LENGTH = 256K
+  ram   (wxa!ri) : ORIGIN = 0x80005000, LENGTH = 32K
 }
 
 PHDRS {
