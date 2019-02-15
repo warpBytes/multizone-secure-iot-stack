@@ -85,9 +85,9 @@ int main(void)
     /* Create the task. */
 	xTaskCreate(ledFadeTask, "ledFadeTask", configMINIMAL_STACK_SIZE, NULL, 0x02,
         &ledfade_task);
-    xTaskCreate(cliTask, "cliTask", configMINIMAL_STACK_SIZE, NULL, 0x01,  /* must have lowest priority */
+    xTaskCreate(cliTask, "cliTask", 3*configMINIMAL_STACK_SIZE, NULL, 0x01,  /* must have lowest priority */
         NULL);
-    xTaskCreate(robotTask, "robotTask", configMINIMAL_STACK_SIZE, NULL, 0x1,
+    xTaskCreate(robotTask, "robotTask", 2*configMINIMAL_STACK_SIZE, NULL, 0x1,
     	&robot_task);
 
     /* Start the tasks and timer running. */

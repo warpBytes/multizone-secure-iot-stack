@@ -10,16 +10,21 @@ static char print_buffer[PRINT_BUFFER_SIZE] = "";
 static const char welcome_msg[] =
 	"\e[2J\e[H" // clear terminal screen
 	"======================================================================\r\n"
-	"     	       Hex Five MultiZone(TM) Security v.0.1.1\r\n"
-	"    Copyright (C) 2018 Hex Five Security Inc. All Rights Reserved\r\n"
-	"======================================================================\r\n"
-	" This version of MultiZone(TM) is meant for evaluation purposes only.\r\n"
-	" As such, use of this software is governed by your Evaluation License.\r\n"
-	" There may be other functional limitations as described in the\r\n"
-	" evaluation kit documentation. The full version of the software does\r\n"
-	" not have these restrictions.\r\n"
+	"     	                 FreeRTOS Kernel V10.1.1\r\n"
+	"     	   LEDs and Robot Control with Command-line interface\r\n"
 	"======================================================================\r\n"
 ;
+
+static const char taskinfo_msg[] =
+	" \r\nTasks\t    Priority	  	Description\r\n"
+	"****************************************************\r\n"
+	"cliTask        	1	Command-line interface Task\r\n"
+	"robotTask      	1	Robot Control Task\r\n"
+	"ledFadeTask    	2	LED Fade Task1\r\n"
+	"IDLE           	0	Idle\r\n"
+;
+
+
 
 static mzmsg_t zone2;
 
@@ -331,6 +336,10 @@ static char history[CMD_LINE_SIZE+1]="";
 
 			} else if (esc==3 && c=='~'){ // del key
 				for (int i=p; i<strlen(cmd_line); i++) cmd_line[i]=cmd_line[i+1];
+				mzmsg_read(&zone2, "\e7", 2); // save curs pos
+				mzmsg_read(&zone2, "\e[K", 3); // clear line from curs pos
+				mzmsg_read(&zone2, &cmd_line[p], strlen(cmd_line)-p);
+				mzmsg_read(&zone2, "\e8", 2); // restore curs pos				
 				esc=0;
 
 			} else if (esc==2 && c=='C'){ // right arrow
@@ -360,19 +369,24 @@ static char history[CMD_LINE_SIZE+1]="";
 			} else if (esc==2 && c=='B'){ // down arrow
 				esc=0;
 
-			} else if (c == 0x7f){ // backspace
-				if(p > 0){
+			} else if ((c=='\b' || c=='\x7f') && p>0 && esc==0){ // backspace
 					p--;
 					for (int i=p; i<strlen(cmd_line); i++) cmd_line[i]=cmd_line[i+1];
-
-					mzmsg_write(&zone2, "\b \b", 3);
-				}
+				mzmsg_write(&zone2, "\e7", 2);
+				mzmsg_write(&zone2, "\e[K", 3);
+				mzmsg_write(&zone2, &cmd_line[p], strlen(cmd_line)-p);
+				mzmsg_write(&zone2, "\e8", 2);
+				mzmsg_write(&zone2, "\b \b", 3);
 
 			} else if (c>=' ' && c<='~' && p < CMD_LINE_SIZE && esc==0){
 				for (int i = CMD_LINE_SIZE-1; i > p; i--) cmd_line[i]=cmd_line[i-1]; // make room for 1 ch
 				cmd_line[p]=c;
-                p++;
-                mzmsg_write(&zone2, &c, 1);
+				mzmsg_write(&zone2, "\e7", 2); // save curs pos
+				mzmsg_write(&zone2, "\e[K", 3); // clear line from curs pos
+				mzmsg_write(&zone2, &cmd_line[p], strlen(cmd_line)-p); p++;
+				mzmsg_write(&zone2, "\e8", 2); // restore curs pos
+				mzmsg_write(&zone2, "\e[C", 3); // move curs right 1 pos
+				
 			} else{
 				esc=0;
             }
@@ -397,9 +411,9 @@ void cliTask( void *pvParameters){
     char c = 0;
 	mzmsg_init(&zone2, 2);
 
-    mzmsg_write(&zone2, welcome_msg, sizeof(welcome_msg));
+    mzmsg_write(&zone2, (char *) welcome_msg, sizeof(welcome_msg));
     print_cpu_info();
-	mzmsg_write(&zone2, "\r\nFreeRTOS CLI\r\n",16);
+    mzmsg_write(&zone2, (char *) taskinfo_msg, sizeof(taskinfo_msg));
 
     char cmd_line[CMD_LINE_SIZE+1]="";
 	int msg[4]={0,0,0,0};
@@ -451,6 +465,10 @@ void cliTask( void *pvParameters){
 
 		} else if (tk1 != NULL && strcmp(tk1, "send")==0){
 			if (tk2 != NULL && tk2[0]>='1' && tk2[0]<='4' && tk3 != NULL){
+				if(tk2[0]=='1'){
+					sprintf(print_buffer, "Z1 > %c \r\n", tk3[0]);
+					mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+				}
 				msg[0]=(unsigned int)*tk3; msg[1]=0; msg[2]=0; msg[3]=0;
 				ECALL_SEND(tk2[0]-'0', msg);
 			} else {
@@ -477,17 +495,9 @@ void cliTask( void *pvParameters){
 			print_stats();
 		} else if (tk1 != NULL && strcmp(tk1, "restart")==0){
 			restart();
-		} else if (tk1 != NULL && strcmp(tk1, "exec")==0){
-			if (tk2 != NULL){
-				const uint64_t addr = strtoull(tk2, NULL, 16);
-			    asm ( "jr (%0)" : : "r"(addr));
-			} else {
-				sprintf(print_buffer, "Syntax: exec address \n");
-				mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-			}
 		} else {
 			sprintf(print_buffer,
-				"Commands: load store exec send recv yield pmp robot stats restart\n");
+				"Commands: load store send recv yield pmp robot stats restart\n");
 			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
 		}
 
