@@ -1,19 +1,27 @@
 # MultiZone Secure IoT Stack
 
-Open Source Software for Developing Secure Applications on RISC-V processors using Hex Five's MultiZone Security Trusted Execution Environment.
+The first Secure IoT Stack for RISC-V – a secure implementation of freeRTOS with hardware enforced separation between the OS, TCP/IP stack and root of trust with TLS 1.3 encryption for data in transit.
+
+This reference implementation combines freeRTOS, picoTCP, wolfSSL and Root of Trust as physically isolated TEE zones
+ - X300 Bitstream : Rocket core with Ethernet Peripheral for Xilinx A7-35T Arty Board
+ - MultiZone Security Trusted Execution Environment configured for 4 Zones
+ - Zone 1: FreeRTOS with 3 tasks (CLI, LED PWM, Robot)
+ - Zone 2: PicoTCP + wolfSSL TLS 1.3 terminating Ethernet port
+ - Zone 3: Root of Trust
+ - Zone 4: USB UART Console
 
 This repository, maintained by Hex Five Security, makes it easy to build a robust Secure IoT Stack with four Zones based on MultiZone Security.
 
 ### Installation ###
 
-Hex Five created a modified version of the Rocket bitstream called teh X300 with an additional Ethernet port and improved performance 
+Hex Five created a modified version of the Rocket SoC called teh X300 with an additional Ethernet port and improved performance
 
 Upload the X300 Bitstream to a Xilinx Artik-7 35T Arty FPGA board
 prerequisites: Xilinx Vivado, Olimex ARM-USB-TINY-H Debugger
  - Download the X300 bitstream .mcs file from https://github.com/hex-five/multizone-fpga/releases
  - Push the .mcs file to the Arty board using Vivado
- 
- Install the certified RISC-V toolchain for Linux - directions specific to a fresh Ubuntu 18.04 LTS, other Linux distros generally a subset
+
+ Install the reference RISC-V toolchain for Linux - directions specific to a fresh Ubuntu 18.04 LTS, other Linux distros generally a subset
  ```
  sudo apt update
  sudo apt upgrade -y
@@ -65,7 +73,7 @@ make clean
 make
 ```
 
-This will result in a HEX file that is now ready to upload to the Arty board.  The first time you push this HEX file up it takes about 2 minutes, on subsequent passes it goes much faster.  
+This will result in a HEX file that is now ready to upload to the Arty board.  The first time you push this HEX file up it takes about 2 minutes, on subsequent passes it goes much faster.
 ```
 make load
 ```
@@ -80,7 +88,7 @@ The system contains four zones:
    - Telnet to port 23
    - Secure telnet (TLS) to port 443
  - Zone 3: Root of Trust and Session Key Storage
- - Zone 4: UART COnsole - access via USB UART at 115,200 buard 8N1
+ - Zone 4: UART Console - access via USB UART at 115,200 buard 8N1
    - Press enter for a list of supported commands
 
 ### For More Information ###
