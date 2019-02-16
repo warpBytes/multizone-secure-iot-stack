@@ -31,6 +31,7 @@
 struct queue {
     uint8_t wp;
     uint8_t rp;
+    uint8_t flush;
     char data[MAX_QUEUE_LEN];
 };
 
@@ -38,6 +39,7 @@ void qinit(struct queue *q)
 {
     q->rp = 0;
     q->wp = 0;
+    q->flush = 0;
 }
 
 uint32_t qtaken(struct queue *q)
@@ -168,10 +170,8 @@ void cb_telnet(uint16_t ev, struct pico_socket *s)
     }
 }
 
-void telnet_client(struct pico_socket *client, struct queue *q)
+void mzmsg_proc(struct queue *txq, struct queue *rxq)
 {
-    char buf[32];
-    int bytes = 0;
     static int ack_pending = 0;
     static int ack_index = 0;
     static int flush = 0;
@@ -193,23 +193,14 @@ void telnet_client(struct pico_socket *client, struct queue *q)
         ECALL_SEND(1, (int[]){0,0,CTL_RST,0});
     }
 
-    if (qfree(q) < MZMSG_CHARS) {
-        bytes = pico_socket_write(sock_client, qfront(q), qcontlen(q));
-        q->rp += bytes;
-        if (qcontlen(q) > 0) {
-            bytes = pico_socket_write(sock_client, qfront(q), qcontlen(q));
-            q->rp += bytes;
-        }
-    }
-
     if ((msg[CTL] & CTL_DAT) != 0) {
         if (msg[IND] == (msg_out[ACK] + 1)) {
-            if (qfree(q) >= MZMSG_CHARS) {
+            if (qfree(txq) >= MZMSG_CHARS) {
                 int ack = 0;
                 char *data = (char*)&msg[DAT];
 
                 while (*data != 0 && ack < MZMSG_CHARS) {
-                    qinsert(q, *data);
+                    qinsert(txq, *data);
                     ack++;
                     data++;
                 }
@@ -219,32 +210,20 @@ void telnet_client(struct pico_socket *client, struct queue *q)
                 flush = 1;
 
                 if ((msg[CTL] & CTL_PSH) != 0) {
-                    bytes = pico_socket_write(sock_client, qfront(q), qcontlen(q));
-                    q->rp += bytes;
-                    if (qcontlen(q) > 0) {
-                        bytes = pico_socket_write(sock_client, qfront(q), qcontlen(q));
-                        q->rp += bytes;
-                    }
+                    txq->flush = 1;
                 }
             }
         }
     }
 
-    if (!ack_pending) {
-        bytes = pico_socket_read(sock_client, buf, 1);
-        if (bytes > 0) {
-            if (buf[0] == '\xff') { // swallow IAC sequences
-                pico_socket_read(sock_client, buf, sizeof(buf));
-            } else {
-                if (buf[0] != 0) {
-                    msg_out[CTL] |= CTL_DAT;
-                    msg_out[IND] = ack_index;
-                    memcpy(&msg_out[DAT], buf, 1);
-                    flush = 1;
-                    ack_pending = 1;
-                }
-            }
-        }
+    if (!ack_pending && rxq->flush) {
+        msg_out[CTL] |= CTL_DAT;
+        msg_out[IND] = ack_index;
+        memcpy(&msg_out[DAT], qfront(rxq), 1);
+        rxq->rp += 1;
+        rxq->flush = 0;
+        flush = 1;
+        ack_pending = 1;
     }
 
     if (((msg[CTL] & CTL_ACK) != 0) & ack_pending) {
@@ -257,6 +236,34 @@ void telnet_client(struct pico_socket *client, struct queue *q)
     if (flush != 0) {
         flush = 0;
         ECALL_SEND(1, (void*)msg_out);
+    }
+}
+
+void telnet_client(struct pico_socket *client, struct queue *txq, struct queue *rxq)
+{
+    char buf[32];
+    int bytes = 0;
+
+    if (qfree(rxq) < MZMSG_CHARS || rxq->flush) {
+        bytes = pico_socket_write(sock_client, qfront(rxq), qcontlen(rxq));
+        rxq->rp += bytes;
+        if (qcontlen(rxq) > 0) {
+            bytes = pico_socket_write(sock_client, qfront(rxq), qcontlen(rxq));
+            rxq->rp += bytes;
+        }
+        rxq->flush = 0;
+    }
+
+    if (qfree(txq) > 0) {
+        bytes = pico_socket_read(sock_client, buf, 1);
+        if (bytes > 0) {
+            if (buf[0] == '\xff') { // swallow IAC sequences
+                pico_socket_read(sock_client, buf, sizeof(buf));
+            } else if (buf[0] != 0) {
+                qinsert(txq, buf[0]);
+                txq->flush = 1;
+            }
+        }
     }
 }
 
@@ -274,7 +281,7 @@ int main(int argc, char *argv[]){
     struct pico_ip4 ipaddr, netmask;
     struct pico_socket* socket;
     struct pico_device* dev;
-    struct queue mzmsg_q;
+    struct queue mzmsg_to1, mzmsg_from1;
     uint16_t bmsr;
 
     do {
@@ -282,7 +289,8 @@ int main(int argc, char *argv[]){
         bmsr = pico_xemaclite_mdio_read(PHY_ADDRESS, BMSR_REG);
     } while ((bmsr & BMSR_LINK_STATUS) == 0);
 
-    qinit(&mzmsg_q);
+    qinit(&mzmsg_to1);
+    qinit(&mzmsg_from1);
 
     /* initialise the stack. Super important if you don't want ugly stuff like
      * segfaults and such! */
@@ -335,8 +343,10 @@ int main(int argc, char *argv[]){
     {
         int msg[4] = {0,0,0,0};
 
+        mzmsg_proc(&mzmsg_from1, &mzmsg_to1);
+
         if (sock_client) {
-            telnet_client(sock_client, &mzmsg_q);
+            telnet_client(sock_client, &mzmsg_to1, &mzmsg_from1);
         }
         pico_stack_tick();
 
