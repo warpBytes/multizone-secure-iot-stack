@@ -2,7 +2,7 @@
 
 TARGET = zone1.elf
 
-CFLAGS += -O0 -g3
+CFLAGS += -O2
 LDFLAGS += -static --specs=nosys.specs 
 
 CFLAGS += -DMZMSG_CHARS="$(MZMSG_CHARS)"
