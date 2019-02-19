@@ -44,6 +44,7 @@ extern "C" {
 #undef  WOLFSSL_USER_IO
 #define WOLFSSL_USER_IO
 
+#define HAVE_PK_CALLBACKS
 
 /* ------------------------------------------------------------------------- */
 /* Math Configuration */

@@ -418,6 +418,20 @@ unsigned int my_rng_seed_gen(void)
     return pico_rand();
 }
 
+#include <wolfssl/wolfcrypt/ecc.h>
+
+WC_RNG rng;
+ecc_key eccKey;
+
+static int eccSign(WOLFSSL* ssl,
+       const unsigned char* in, unsigned int inSz,
+       unsigned char* out, unsigned int* outSz,
+       const unsigned char* keyDer, unsigned int keySz,
+       void* ctx)
+{
+    return wc_ecc_sign_hash(in, inSz, out, outSz, &rng, &eccKey);
+}
+
 static int wolfRecv(WOLFSSL *ssl, char *buf, int sz, void *ctx)
 {
     int ret;
@@ -447,7 +461,7 @@ static int wolfSend(WOLFSSL *ssl, char *buf, int sz, void *ctx)
 }
 
 int main(int argc, char *argv[]){
-    int id;
+    unsigned int idx = 0;
     uint16_t telnet_port = short_be(23);
     uint16_t tls_port = short_be(443);
     uint32_t yes = 1;
@@ -524,11 +538,25 @@ int main(int argc, char *argv[]){
         return -1;
     }
 
-    ret = wolfSSL_CTX_use_PrivateKey_buffer(ctx, key_der, sizeof(key_der), SSL_FILETYPE_ASN1);
-    if (ret != SSL_SUCCESS) {
-        printf("Could not load private key!\n");
+    ret = wc_InitRng(&rng);
+    if (ret != 0) {
+        printf("Could not init rng!\n");
         return -1;
     }
+
+    ret = wc_ecc_init(&eccKey);
+    if (ret != 0) {
+        printf("Could not init ECC key!\n");
+        return -1;
+    }
+
+    ret = wc_EccPrivateKeyDecode(key_der, &idx, &eccKey, sizeof(key_der));
+    if (ret != 0) {
+        printf("Could not decode private ECC key!\n");
+        return -1;
+    }
+
+    wolfSSL_CTX_SetEccSignCb(ctx, eccSign);
 
     socket = pico_socket_open(PICO_PROTO_IPV4, PICO_PROTO_TCP, cb_tls);
     if (!socket) {
