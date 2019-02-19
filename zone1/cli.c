@@ -336,10 +336,9 @@ static char history[CMD_LINE_SIZE+1]="";
 
 			} else if (esc==3 && c=='~'){ // del key
 				for (int i=p; i<strlen(cmd_line); i++) cmd_line[i]=cmd_line[i+1];
-				mzmsg_read(&zone2, "\e7", 2); // save curs pos
-				mzmsg_read(&zone2, "\e[K", 3); // clear line from curs pos
-				mzmsg_read(&zone2, &cmd_line[p], strlen(cmd_line)-p);
-				mzmsg_read(&zone2, "\e8", 2); // restore curs pos				
+				mzmsg_write(&zone2, "\e7\e[K", 5); // save curs pos // clear line from curs pos
+				mzmsg_write(&zone2, &cmd_line[p], strlen(cmd_line)-p);
+				mzmsg_write(&zone2, "\e8", 2); // restore curs pos
 				esc=0;
 
 			} else if (esc==2 && c=='C'){ // right arrow
@@ -370,23 +369,18 @@ static char history[CMD_LINE_SIZE+1]="";
 				esc=0;
 
 			} else if ((c=='\b' || c=='\x7f') && p>0 && esc==0){ // backspace
-					p--;
-					for (int i=p; i<strlen(cmd_line); i++) cmd_line[i]=cmd_line[i+1];
-				mzmsg_write(&zone2, "\e7", 2);
-				mzmsg_write(&zone2, "\e[K", 3);
+				p--;
+				for (int i=p; i<strlen(cmd_line); i++) cmd_line[i]=cmd_line[i+1];
+				mzmsg_write(&zone2, "\e[D\e7\e[K", 8);
 				mzmsg_write(&zone2, &cmd_line[p], strlen(cmd_line)-p);
 				mzmsg_write(&zone2, "\e8", 2);
-				mzmsg_write(&zone2, "\b \b", 3);
 
 			} else if (c>=' ' && c<='~' && p < CMD_LINE_SIZE && esc==0){
 				for (int i = CMD_LINE_SIZE-1; i > p; i--) cmd_line[i]=cmd_line[i-1]; // make room for 1 ch
 				cmd_line[p]=c;
-				mzmsg_write(&zone2, "\e7", 2); // save curs pos
-				mzmsg_write(&zone2, "\e[K", 3); // clear line from curs pos
+				mzmsg_write(&zone2, "\e7\e[K",  strlen("\e7\e[K")); // save curs pos // clear line from curs pos
 				mzmsg_write(&zone2, &cmd_line[p], strlen(cmd_line)-p); p++;
-				mzmsg_write(&zone2, "\e8", 2); // restore curs pos
-				mzmsg_write(&zone2, "\e[C", 3); // move curs right 1 pos
-				
+				mzmsg_write(&zone2, "\e8\e[C", strlen("\e8\e[C")); // restore curs pos // move curs right 1 pos
 			} else{
 				esc=0;
             }
