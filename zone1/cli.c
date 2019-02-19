@@ -1,5 +1,6 @@
 /* Copyright(C) 2018 Hex Five Security, Inc. - All Rights Reserved */
 
+#include <limits.h>
 #include <cli.h>
 #include <robot.h>
 #include <mzmsg.h>
@@ -386,7 +387,18 @@ static char history[CMD_LINE_SIZE+1]="";
             }
 		}
 
-		ECALL_YIELD();
+		uint32_t ulNotificationValue;
+
+		if( xTaskNotifyWait( 0x00, ULONG_MAX, &ulNotificationValue, 0) == pdTRUE ) {
+			mzmsg_write(&zone2, "\e7\e[2K", 6); // save curs pos // 2K clear entire line - cur pos dosn't change
+			switch(ulNotificationValue) {
+				case 0: sprintf(print_buffer, "\rZ1 > USB DEVICE DETACH\r\n"); break;
+				case 1: sprintf(print_buffer, "\rZ1 > USB DEVICE ATTACH VID=0x1267 PID=0x0000\r\n"); break;
+			}
+			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+			mzmsg_write(&zone2, "\nZ1 > \e8\e[2B", 12);// restore curs pos // curs down down
+		}
+		taskYIELD();
 
 	} // while(1)
 

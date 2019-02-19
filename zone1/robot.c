@@ -324,10 +324,12 @@ void robotTask( void *pvParameters )
 
 		// update USB state & trigger event for Zone1
 		if (rx_data != usb_state){
-			if (rx_data==0x12670000)
+			if (rx_data==0x12670000) {
 				ECALL_SEND(4, ((int[]){1,0,0,0}));
-			else if (rx_data==0x00000000){
+				xTaskNotify(cli_task, 0x01, eSetValueWithOverwrite);
+			} else if (rx_data==0x00000000){
 				ECALL_SEND(4, ((int[]){2,0,0,0}));
+				xTaskNotify(cli_task, 0x00, eSetValueWithOverwrite);
 				owi_task_stop_request();
 			}
 			usb_state=rx_data;
