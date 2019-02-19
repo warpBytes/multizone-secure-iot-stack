@@ -398,6 +398,18 @@ static char history[CMD_LINE_SIZE+1]="";
 			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
 			mzmsg_write(&zone2, "\nZ1 > \e8\e[2B", 12);// restore curs pos // curs down down
 		}
+
+		if( xQueueReceive( xbuttons_queue, &ulNotificationValue, 0) == pdTRUE ) {
+			mzmsg_write(&zone2, "\e7\e[2K", 6); // save curs pos // 2K clear entire line - cur pos dosn't change
+			switch(ulNotificationValue) {
+				case 216 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 16 [BTN0]\r\n"); break;
+				case 217 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 17 [BTN1]\r\n"); break;
+				case 218 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 18 [BTN2]\r\n"); break;
+			}
+			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+			mzmsg_write(&zone2, "\nZ1 > \e8\e[2B", 12);// restore curs pos // curs down down
+		}
+
 		taskYIELD();
 
 	} // while(1)
