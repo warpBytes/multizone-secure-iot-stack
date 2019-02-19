@@ -42,8 +42,8 @@ unsigned int my_rng_seed_gen(void)
 
 int eccSign(unsigned int inSz, unsigned int outSz)
 {
-    static unsigned char in[64];
-    static unsigned char out[64];
+    static unsigned char in[128];
+    static unsigned char out[128];
     int msg[4];
     int i, ret;
 
