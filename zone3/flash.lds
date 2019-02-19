@@ -6,7 +6,7 @@ ENTRY( _start )
 
 MEMORY {
   flash (rxai!w) : ORIGIN = 0x20460000, LENGTH = 64K
-  ram   (wxa!ri) : ORIGIN = 0x8000D000, LENGTH =  4K
+  ram   (wxa!ri) : ORIGIN = 0x8000D000, LENGTH =  8K
 }
 
 PHDRS {
