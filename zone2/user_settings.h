@@ -101,7 +101,7 @@ extern "C" {
 /* ------------------------------------------------------------------------- */
 /* RSA */
 #undef NO_RSA
-#if 1
+#if 0
     #ifdef USE_FAST_MATH
         /* Maximum math bits (Max RSA key bits * 2) */
         #undef  FP_MAX_BITS
@@ -122,7 +122,7 @@ extern "C" {
     #endif
 
     /* RSA PSS Support */
-    #if 0
+    #if 1
         #define WC_RSA_PSS
     #endif
 
@@ -211,7 +211,7 @@ extern "C" {
 #undef  NO_DH
 #if 1
     /* Use table for DH instead of -lm (math) lib dependency */
-    #if 0
+    #if 1
         #define WOLFSSL_DH_CONST
         #define HAVE_FFDHE_2048
         #define HAVE_FFDHE_4096
@@ -346,7 +346,7 @@ extern "C" {
 
 /* HKDF */
 #undef HAVE_HKDF
-#if 0
+#if 1
     #define HAVE_HKDF
 #endif
 
@@ -422,7 +422,7 @@ extern "C" {
 #endif
 
 /* Memory callbacks */
-#if 0
+#if 1
     #undef  USE_WOLFSSL_MEMORY
     #define USE_WOLFSSL_MEMORY
 
@@ -464,7 +464,7 @@ extern unsigned long my_time(unsigned long* timer);
 #define CUSTOM_RAND_TYPE      unsigned int
 extern unsigned int my_rng_seed_gen(void);
 #undef  CUSTOM_RAND_GENERATE
-#define CUSTOM_RAND_GENERATE  pico_rand
+#define CUSTOM_RAND_GENERATE  my_rng_seed_gen
 
 /* Choose RNG method */
 #if 1
@@ -525,7 +525,7 @@ extern unsigned int my_rng_seed_gen(void);
 /* Enable Features */
 /* ------------------------------------------------------------------------- */
 #undef WOLFSSL_TLS13
-#if 0
+#if 1
     #define WOLFSSL_TLS13
 #endif
 
