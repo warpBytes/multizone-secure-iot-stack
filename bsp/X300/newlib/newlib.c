@@ -59,9 +59,6 @@ int _open(const char* name, int flags, int mode) {
 
 	if (strcmp(name, "UART")==0){
 
-		GPIO_REG(GPIO_IOF_SEL) &= ~IOF0_UART0_MASK;
-  		GPIO_REG(GPIO_IOF_EN) |= IOF0_UART0_MASK;
-
 		UART_REG(UART_DIV) = CPU_FREQ/115200-1;
 		UART_REG(UART_TXCTRL) = 0x1;
 		UART_REG(UART_RXCTRL) = 0x1;
