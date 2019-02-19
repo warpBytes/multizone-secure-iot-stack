@@ -40,12 +40,15 @@ unsigned int my_rng_seed_gen(void)
     return rand_seed;
 }
 
-int eccSign(unsigned int inSz, unsigned int outSz)
+void eccSign(unsigned int inSz, unsigned int outSz)
 {
-    static unsigned char in[128];
-    static unsigned char out[128];
+    static unsigned char *in;
+    static unsigned char *out;
     int msg[4];
     int i, ret;
+
+    in = (unsigned char*)malloc(inSz);
+    out = (unsigned char*)malloc(outSz);
 
     i = 0;
     while (i < inSz) {
@@ -79,6 +82,9 @@ int eccSign(unsigned int inSz, unsigned int outSz)
         ECALL_YIELD();
         i += len;
     }
+
+    free(in);
+    free(out);
 }
 
 int main(void)
