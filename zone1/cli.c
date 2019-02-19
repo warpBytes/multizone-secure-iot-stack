@@ -431,8 +431,13 @@ void cliTask( void *pvParameters){
 		if (tk1 != NULL && strcmp(tk1, "pmp")==0){
             print_pmp_ranges();
         } else if(tk1 != NULL && strcmp(tk1, "robot")==0){
-			char c = (char) *tk2;
-			xQueueSend( robot_queue, &c, 0 );
+			if (tk2 != NULL){
+				char c = (char) *tk2;
+				xQueueSend( robot_queue, &c, 0 );
+			} else {
+				sprintf(print_buffer, "Syntax: robot command\r\n");
+				mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+			}
 		} else if (tk1 != NULL && strcmp(tk1, "load")==0){
 			if (tk2 != NULL){
 				uint8_t data = 0x00;
