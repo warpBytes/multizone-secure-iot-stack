@@ -42,7 +42,6 @@ C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/sha3.c
 # wolfCrypt Additional
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/asn.c
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/chacha.c
-C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/cmac.c
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/coding.c
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/compress.c
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/cpuid.c
