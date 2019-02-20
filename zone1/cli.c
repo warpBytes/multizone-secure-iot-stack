@@ -1,5 +1,6 @@
 /* Copyright(C) 2018 Hex Five Security, Inc. - All Rights Reserved */
 
+#include <limits.h>
 #include <cli.h>
 #include <robot.h>
 #include <mzmsg.h>
@@ -336,10 +337,9 @@ static char history[CMD_LINE_SIZE+1]="";
 
 			} else if (esc==3 && c=='~'){ // del key
 				for (int i=p; i<strlen(cmd_line); i++) cmd_line[i]=cmd_line[i+1];
-				mzmsg_read(&zone2, "\e7", 2); // save curs pos
-				mzmsg_read(&zone2, "\e[K", 3); // clear line from curs pos
-				mzmsg_read(&zone2, &cmd_line[p], strlen(cmd_line)-p);
-				mzmsg_read(&zone2, "\e8", 2); // restore curs pos				
+				mzmsg_write(&zone2, "\e7\e[K", 5); // save curs pos // clear line from curs pos
+				mzmsg_write(&zone2, &cmd_line[p], strlen(cmd_line)-p);
+				mzmsg_write(&zone2, "\e8", 2); // restore curs pos
 				esc=0;
 
 			} else if (esc==2 && c=='C'){ // right arrow
@@ -370,29 +370,47 @@ static char history[CMD_LINE_SIZE+1]="";
 				esc=0;
 
 			} else if ((c=='\b' || c=='\x7f') && p>0 && esc==0){ // backspace
-					p--;
-					for (int i=p; i<strlen(cmd_line); i++) cmd_line[i]=cmd_line[i+1];
-				mzmsg_write(&zone2, "\e7", 2);
-				mzmsg_write(&zone2, "\e[K", 3);
+				p--;
+				for (int i=p; i<strlen(cmd_line); i++) cmd_line[i]=cmd_line[i+1];
+				mzmsg_write(&zone2, "\e[D\e7\e[K", 8);
 				mzmsg_write(&zone2, &cmd_line[p], strlen(cmd_line)-p);
 				mzmsg_write(&zone2, "\e8", 2);
-				mzmsg_write(&zone2, "\b \b", 3);
 
 			} else if (c>=' ' && c<='~' && p < CMD_LINE_SIZE && esc==0){
 				for (int i = CMD_LINE_SIZE-1; i > p; i--) cmd_line[i]=cmd_line[i-1]; // make room for 1 ch
 				cmd_line[p]=c;
-				mzmsg_write(&zone2, "\e7", 2); // save curs pos
-				mzmsg_write(&zone2, "\e[K", 3); // clear line from curs pos
+				mzmsg_write(&zone2, "\e7\e[K",  strlen("\e7\e[K")); // save curs pos // clear line from curs pos
 				mzmsg_write(&zone2, &cmd_line[p], strlen(cmd_line)-p); p++;
-				mzmsg_write(&zone2, "\e8", 2); // restore curs pos
-				mzmsg_write(&zone2, "\e[C", 3); // move curs right 1 pos
-				
+				mzmsg_write(&zone2, "\e8\e[C", strlen("\e8\e[C")); // restore curs pos // move curs right 1 pos
 			} else{
 				esc=0;
             }
 		}
 
-		ECALL_YIELD();
+		uint32_t ulNotificationValue;
+
+		if( xTaskNotifyWait( 0x00, ULONG_MAX, &ulNotificationValue, 0) == pdTRUE ) {
+			mzmsg_write(&zone2, "\e7\e[2K", 6); // save curs pos // 2K clear entire line - cur pos dosn't change
+			switch(ulNotificationValue) {
+				case 0: sprintf(print_buffer, "\rZ1 > USB DEVICE DETACH\r\n"); break;
+				case 1: sprintf(print_buffer, "\rZ1 > USB DEVICE ATTACH VID=0x1267 PID=0x0000\r\n"); break;
+			}
+			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+			mzmsg_write(&zone2, "\nZ1 > \e8\e[2B", 12);// restore curs pos // curs down down
+		}
+
+		if( xQueueReceive( xbuttons_queue, &ulNotificationValue, 0) == pdTRUE ) {
+			mzmsg_write(&zone2, "\e7\e[2K", 6); // save curs pos // 2K clear entire line - cur pos dosn't change
+			switch(ulNotificationValue) {
+				case 216 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 16 [BTN0]\r\n"); break;
+				case 217 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 17 [BTN1]\r\n"); break;
+				case 218 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 18 [BTN2]\r\n"); break;
+			}
+			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+			mzmsg_write(&zone2, "\nZ1 > \e8\e[2B", 12);// restore curs pos // curs down down
+		}
+
+		taskYIELD();
 
 	} // while(1)
 
@@ -431,8 +449,13 @@ void cliTask( void *pvParameters){
 		if (tk1 != NULL && strcmp(tk1, "pmp")==0){
             print_pmp_ranges();
         } else if(tk1 != NULL && strcmp(tk1, "robot")==0){
-			char c = (char) *tk2;
-			xQueueSend( robot_queue, &c, 0 );
+			if (tk2 != NULL){
+				char c = (char) *tk2;
+				xQueueSend( robot_queue, &c, 0 );
+			} else {
+				sprintf(print_buffer, "Syntax: robot command\r\n");
+				mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+			}
 		} else if (tk1 != NULL && strcmp(tk1, "load")==0){
 			if (tk2 != NULL){
 				uint8_t data = 0x00;

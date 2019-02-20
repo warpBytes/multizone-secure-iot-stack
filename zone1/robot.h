@@ -7,7 +7,7 @@
 #include <queue.h>   /* RTOS queue related API prototypes. */
 
 extern QueueHandle_t robot_queue;
-
+extern TaskHandle_t cli_task;
 void robotTask( void *pvParameters );
 
 #endif

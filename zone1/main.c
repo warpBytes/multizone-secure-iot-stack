@@ -35,7 +35,10 @@ static void prvSetupHardware( void );
 static void ledFadeTask( void *pvParameters );
 
 TaskHandle_t ledfade_task;
+TaskHandle_t cli_task;
 TaskHandle_t robot_task;
+
+QueueHandle_t xbuttons_queue;
 
 
 /*-----------------------------------------------------------*/
@@ -81,12 +84,13 @@ int main(void)
     prvSetupHardware();
 
     robot_queue = xQueueCreate(5, sizeof(char));
+    xbuttons_queue = xQueueCreate(1, sizeof(char));
 
     /* Create the task. */
 	xTaskCreate(ledFadeTask, "ledFadeTask", configMINIMAL_STACK_SIZE, NULL, 0x02,
         &ledfade_task);
     xTaskCreate(cliTask, "cliTask", 3*configMINIMAL_STACK_SIZE, NULL, 0x01,  /* must have lowest priority */
-        NULL);
+        &cli_task);
     xTaskCreate(robotTask, "robotTask", 2*configMINIMAL_STACK_SIZE, NULL, 0x1,
     	&robot_task);
 
@@ -135,6 +139,7 @@ static void ledFadeTask( void *pvParameters )
                     break;
             }
             ECALL_SEND(4, (int[4]){ulNotificationValue,0,0,0} );
+            xQueueSend( xbuttons_queue, &ulNotificationValue, 0);
 
         }
         else {
