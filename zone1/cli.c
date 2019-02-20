@@ -311,7 +311,7 @@ void print_pmp_ranges(void){
 } // print_pmpcfg()
 
 
-#define CMD_LINE_SIZE 128
+#define CMD_LINE_SIZE 32
 static char history[CMD_LINE_SIZE+1]="";
 // ------------------------------------------------------------------------
  int readline(char *cmd_line) {
