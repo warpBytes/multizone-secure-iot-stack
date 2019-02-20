@@ -254,13 +254,16 @@ void telnet_client(struct pico_socket *client, struct queue *txq, struct queue *
 
     if (qfree(rxq) < MZMSG_CHARS || rxq->flush) {
         bytes = pico_socket_write(sock_client, qfront(rxq), qcontlen(rxq));
-        rxq->rp += bytes;
-        if (qcontlen(rxq) > 0) {
-            bytes = pico_socket_write(sock_client, qfront(rxq), qcontlen(rxq));
+        if (bytes > 0) {
             rxq->rp += bytes;
+            if (qcontlen(rxq) > 0) {
+                bytes = pico_socket_write(sock_client, qfront(rxq), qcontlen(rxq));
+                if (bytes > 0)
+                    rxq->rp += bytes;
+            }
+            if (qempty(rxq))
+                rxq->flush = 0;
         }
-        if (qempty(rxq))
-            rxq->flush = 0;
     }
 
     if (qfree(txq) > 0) {
@@ -441,13 +444,16 @@ void tls_client(WOLFSSL *ssl, struct queue *txq, struct queue *rxq)
     } else {
         if (qfree(rxq) < MZMSG_CHARS || rxq->flush) {
             bytes = wolfSSL_write(ssl, qfront(rxq), qcontlen(rxq));
-            rxq->rp += bytes;
-            if (qcontlen(rxq) > 0) {
-                bytes = wolfSSL_write(ssl, qfront(rxq), qcontlen(rxq));
+            if (bytes > 0) {
                 rxq->rp += bytes;
+                if (qcontlen(rxq) > 0) {
+                    bytes = wolfSSL_write(ssl, qfront(rxq), qcontlen(rxq));
+                    if (bytes > 0)
+                        rxq->rp += bytes;
+                }
+                if (qempty(rxq))
+                    rxq->flush = 0;
             }
-            if (qempty(rxq))
-                rxq->flush = 0;
         }
 
         if (qfree(txq) > 0) {
