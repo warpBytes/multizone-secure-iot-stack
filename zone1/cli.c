@@ -25,8 +25,30 @@ static const char taskinfo_msg[] =
 	"IDLE           	0	Idle\r\n"
 ;
 
+static const char robotinfo_msg[] =
+	"Syntax: send 1 {q|a|w|s|e|d|r|f|t|g|y|>|<|1|0}\r\n"
+	"               'q' - grip close\r\n"
+	"               'a' - grip open\r\n"
+	"               'w' - wrist up\r\n"
+	"               's' - wrist down\r\n"
+	"               'e' - elbow up\r\n"
+	"               'd' - elbow down\r\n"
+	"               'r' - shoulder up\r\n"
+	"               'f' - shoulder down\r\n"
+	"               't' - base clockwise\r\n"
+	"               'g' - base counterclockwise\r\n"
+	"               'y' - light on\r\n"
+	"               '>' - unfold\r\n"
+	"               '<' - fold\r\n"
+	"               '1' - start dancing\r\n"
+	"               '0' - stop dancing\r\n"
+;
 
+static const char roboterror_msg[] =
+	"Error: robot not connected\r\n"
+;
 
+static uint32_t ulRobotValue = 0;
 static mzmsg_t zone2;
 
 void restart(){
@@ -403,16 +425,19 @@ static char history[CMD_LINE_SIZE+1]="";
 			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
 		}
 
+
 		uint32_t ulNotificationValue = 0;
 
-		if( xTaskNotifyWait( 0x00, ULONG_MAX, &ulNotificationValue, 0) == pdTRUE ) {
+		if( xTaskNotifyWait( 0x00, 0x00, &ulRobotValue, 0) == pdTRUE ) {
 			mzmsg_write(&zone2, "\e7\e[2K", 6); // save curs pos // 2K clear entire line - cur pos dosn't change
-			switch(ulNotificationValue) {
+			switch(ulRobotValue) {
 				case 0: sprintf(print_buffer, "\rZ1 > USB DEVICE DETACH\r\n"); break;
 				case 1: sprintf(print_buffer, "\rZ1 > USB DEVICE ATTACH VID=0x1267 PID=0x0000\r\n"); break;
 			}
 			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-			mzmsg_write(&zone2, "\nZ1 > \e8\e[2B", 12);// restore curs pos // curs down down
+			mzmsg_write(&zone2, "\nZ1 > ", 8);
+			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
+			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
 		}
 
 		if( xQueueReceive( xbuttons_queue, &ulNotificationValue, 0) == pdTRUE ) {
@@ -423,7 +448,9 @@ static char history[CMD_LINE_SIZE+1]="";
 				case 218 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 18 [BTN2]\r\n"); break;
 			}
 			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-			mzmsg_write(&zone2, "\nZ1 > \e8\e[2B", 12);// restore curs pos // curs down down
+			mzmsg_write(&zone2, "\nZ1 > ", 8);
+			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
+			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
 		}
 
 		taskYIELD();
@@ -464,15 +491,7 @@ void cliTask( void *pvParameters){
 
 		if (tk1 != NULL && strcmp(tk1, "pmp")==0){
             print_pmp_ranges();
-        } else if(tk1 != NULL && strcmp(tk1, "robot")==0){
-			if (tk2 != NULL){
-				char c = (char) *tk2;
-				xQueueSend( robot_queue, &c, 0 );
-			} else {
-				sprintf(print_buffer, "Syntax: robot command\r\n");
-				mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-			}
-		} else if (tk1 != NULL && strcmp(tk1, "load")==0){
+        } else if (tk1 != NULL && strcmp(tk1, "load")==0){
 			if (tk2 != NULL){
 				uint8_t data = 0x00;
 				const uint64_t addr = strtoull(tk2, NULL, 16);
@@ -505,8 +524,74 @@ void cliTask( void *pvParameters){
 		} else if (tk1 != NULL && strcmp(tk1, "send")==0){
 			if (tk2 != NULL && tk2[0]>='1' && tk2[0]<='4' && tk3 != NULL){
 				if(tk2[0]=='1'){
-					sprintf(print_buffer, "Z1 > %c \r\n", tk3[0]);
-					mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+					char c = (char) *tk3;
+					switch (c) {
+						case 'q' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: grip close\r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 'a' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: grip open\r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 'w' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: wrist up\r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 's' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: wrist down\r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 'e' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: elbow up\r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 'd' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: elbow down\r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 'r' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: shoulder up \r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 'f' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: shoulder down \r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 't' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: base clockwise \r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 'g' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: base counterclockwise \r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 'y' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)?"Robot: light on \r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case '>' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)?"Robot: Unfold \r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case '<' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)?"Robot: Fold \r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case '1' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)?"Robot: Start dancing \r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case '0' : 	xQueueSend( robot_queue, &c, 0 ); 
+									sprintf(print_buffer, (char *) (ulRobotValue==1)?"Robot: Stop dancing \r\n":roboterror_msg);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+						case 'h' :	mzmsg_write(&zone2,  (char *) robotinfo_msg, strlen(robotinfo_msg));
+									break;
+						default  :	sprintf(print_buffer, "Z1 > %c \r\n", tk3[0]);
+									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+									break;
+					}
 				}
 				msg[0]=(unsigned int)*tk3; msg[1]=0; msg[2]=0; msg[3]=0;
 				ECALL_SEND(tk2[0]-'0', msg);
@@ -536,7 +621,7 @@ void cliTask( void *pvParameters){
 			restart();
 		} else {
 			sprintf(print_buffer,
-				"Commands: load store send recv yield pmp robot stats restart\n");
+				"Commands: load store send recv yield pmp stats restart\n");
 			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
 		}
 
