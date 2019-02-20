@@ -523,7 +523,8 @@ void cliTask( void *pvParameters){
 
 		} else if (tk1 != NULL && strcmp(tk1, "send")==0){
 			if (tk2 != NULL && tk2[0]>='1' && tk2[0]<='4' && tk3 != NULL){
-				if(tk2[0]=='1'){
+				xQueueSend( robot_queue, tk3, 0 );
+/*				if(tk2[0]=='1'){
 					char c = (char) *tk3;
 					switch (c) {
 						case 'q' : 	xQueueSend( robot_queue, &c, 0 ); 
@@ -592,7 +593,7 @@ void cliTask( void *pvParameters){
 									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
 									break;
 					}
-				}
+				}*/
 				msg[0]=(unsigned int)*tk3; msg[1]=0; msg[2]=0; msg[3]=0;
 				ECALL_SEND(tk2[0]-'0', msg);
 			} else {
