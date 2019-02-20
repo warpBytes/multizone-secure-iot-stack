@@ -1,12 +1,12 @@
 # MultiZone Secure IoT Stack
 
-The first Secure IoT Stack for RISC-V – a secure implementation of freeRTOS with hardware enforced separation between the OS, TCP/IP stack and root of trust with TLS 1.3 for secure Internet of Things applications.
+The first Secure IoT Stack for RISC-V – a secure implementation of freeRTOS with hardware enforced separation between the OS, TCP/IP stack and root of trust with TLS 1.3 / ECC for secure Internet of Things applications.
 
 This reference implementation combines freeRTOS, picoTCP, wolfSSL and Root of Trust as physically isolated TEE zones
  - X300 Bitstream : Rocket core with Ethernet Peripheral for Xilinx A7-35T Arty Board
  - MultiZone Security Trusted Execution Environment configured for 4 Zones
  - Zone 1: FreeRTOS with 3 tasks (CLI, LED PWM, Robot)
- - Zone 2: PicoTCP + wolfSSL TLS 1.3 terminating Ethernet port
+ - Zone 2: PicoTCP + wolfSSL TLS 1.3 / ECC terminating Ethernet port
  - Zone 3: Root of Trust
  - Zone 4: USB UART Console
 
