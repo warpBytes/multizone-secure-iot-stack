@@ -387,7 +387,23 @@ static char history[CMD_LINE_SIZE+1]="";
             }
 		}
 
-		uint32_t ulNotificationValue;
+		// poll & print incoming messages
+		int msg[4]={0,0,0,0};
+		ECALL_RECV(4, msg);
+		if (msg[0]){
+			// save curs pos // 2K clear entire line - cur pos dosn't change
+			//print Z4 Message
+			mzmsg_write(&zone2, "\e7\e[2K\rZ4 > ", 12);
+			switch (msg[0]) {
+				case 'p' : mzmsg_write(&zone2, "pong", 4); break;
+				default  : mzmsg_write(&zone2, (char *) &msg[0], strlen((const char *) msg)); break;
+			}
+			mzmsg_write(&zone2, "\r\n\nZ1 > ", 8);
+			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
+			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
+		}
+
+		uint32_t ulNotificationValue = 0;
 
 		if( xTaskNotifyWait( 0x00, ULONG_MAX, &ulNotificationValue, 0) == pdTRUE ) {
 			mzmsg_write(&zone2, "\e7\e[2K", 6); // save curs pos // 2K clear entire line - cur pos dosn't change
