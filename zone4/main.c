@@ -426,6 +426,7 @@ void print_pmp_ranges(void){
 			write(1, "\e[2B", 4); // curs down down
 		}
 
+		char skip_print = 0;
 		ECALL_RECV(1, msg);
 		if (msg[0]){
 
@@ -433,20 +434,19 @@ void print_pmp_ranges(void){
 			write(1, "\e[2K", 4); // 2K clear entire line - cur pos dosn't change
 
 			switch (msg[0]) {
-			case 1   : write(1, "\rZ1 > USB DEVICE ATTACH VID=0x1267 PID=0x0000\r\n", 47); break;
-			case 2   : write(1, "\rZ1 > USB DEVICE DETACH\r\n", 25); break;
-			case 216 : write(1, "\rZ1 > CLINT IRQ 16 [BTN0]\r\n", 27); break;
-			case 217 : write(1, "\rZ1 > CLINT IRQ 17 [BTN1]\r\n", 27); break;
-			case 218 : write(1, "\rZ1 > CLINT IRQ 18 [BTN2]\r\n", 27); break;
-			case 'p' : write(1, "\rZ1 > ping\r\n", 12); msg[0] = 'P'; ECALL_SEND(1, (void*)msg); break;
-			case 'P' : write(1, "\rZ1 > pong\r\n", 12); break;
-			default  : write(1, "\rZ1 > ", 6); write(1, &msg[0], strlen(msg));	write(1, "\r\n", 2); break;
+			case 1   : write(1, "\rZ1 > USB DEVICE ATTACH VID=0x1267 PID=0x0000\r\n\n", 48); break;
+			case 2   : write(1, "\rZ1 > USB DEVICE DETACH\r\n\n", 26); break;
+			case 216 : write(1, "\rZ1 > CLINT IRQ 16 [BTN0]\r\n\n", 28); break;
+			case 217 : write(1, "\rZ1 > CLINT IRQ 17 [BTN1]\r\n\n", 28); break;
+			case 218 : write(1, "\rZ1 > CLINT IRQ 18 [BTN2]\r\n\n", 28); break;
+			case 'P' : write(1, "\rZ1 > pong\r\n\n", 13); break;
+			case 'p' : msg[0] = 'P'; ECALL_SEND(1, (void*)msg);
+			default  : write(1, "\r", 1); skip_print = 1;
 			}
-
-			write(1, "\nZ4 > ", 6);
+			write(1, "Z4 > ", 5);
 			write(1, &cmd_line[0], strlen(cmd_line));
 			write(1, "\e8", 2);   // restore curs pos
-			write(1, "\e[2B", 4); // curs down down
+			if(!skip_print){ write(1, "\e[2B", 4);}else{skip_print = 0;}
 		}
 
 		ECALL_YIELD();

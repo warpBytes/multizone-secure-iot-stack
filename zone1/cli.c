@@ -27,21 +27,14 @@ static const char taskinfo_msg[] =
 
 static const char robotinfo_msg[] =
 	"Syntax: send 1 {q|a|w|s|e|d|r|f|t|g|y|>|<|1|0}\r\n"
-	"               'q' - grip close\r\n"
-	"               'a' - grip open\r\n"
-	"               'w' - wrist up\r\n"
-	"               's' - wrist down\r\n"
-	"               'e' - elbow up\r\n"
-	"               'd' - elbow down\r\n"
-	"               'r' - shoulder up\r\n"
-	"               'f' - shoulder down\r\n"
-	"               't' - base clockwise\r\n"
-	"               'g' - base counterclockwise\r\n"
-	"               'y' - light on\r\n"
-	"               '>' - unfold\r\n"
-	"               '<' - fold\r\n"
-	"               '1' - start dancing\r\n"
-	"               '0' - stop dancing\r\n"
+	"     'q' - grip close      'a' - grip open\r\n"
+	"     'w' - wrist up        's' - wrist down\r\n"
+	"     'e' - elbow up        'd' - elbow down\r\n"
+	"     'r' - shoulder up     'f' - shoulder down\r\n"
+	"     't' - base clockwise  'g' - base counterclockwise\r\n"
+	"     '>' - unfold          '<' - fold\r\n"	
+	"     '1' - start dancing   '0' - stop dancing\r\n"
+	"     'y' - light on\r\n"
 ;
 
 static const char roboterror_msg[] =
@@ -414,49 +407,53 @@ static char history[CMD_LINE_SIZE+1]="";
 		// poll & print Zone1 incoming messages
 		ECALL_RECV(1, msg);
 		if (msg[0]){
-			// save curs pos // 2K clear entire line - cur pos dosn't change
-			//print Z4 Message
-			mzmsg_write(&zone2, "\e7\e[2K\rZ1 > ", 12);
 			switch (msg[0]) {
-				case 'p' : mzmsg_write(&zone2, "ping", 4); msg[0] = 'P'; ECALL_SEND(1, (void*)msg); break;
-				case 'P' : mzmsg_write(&zone2, "pong", 4); break;
-				default  : mzmsg_write(&zone2, (char *) &msg[0], strlen((const char *) msg)); break;
+				case 'p' :	msg[0] = 'P'; ECALL_SEND(1, (void*)msg);
+							break;
+				case 'P' :	mzmsg_write(&zone2, "\e7\e[2K", 6);
+							mzmsg_write(&zone2, "\rZ1 > pong\r\n", 12);
+							mzmsg_write(&zone2, "\nZ1 > ", 6);
+							mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
+							mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
+							break;
+				default  :	break;
 			}
-			mzmsg_write(&zone2, "\r\n\nZ1 > ", 8);
-			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
-			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
 		}
 
 
 		// poll & print Zone4 incoming messages
 		ECALL_RECV(4, msg);
 		if (msg[0]){
-			// save curs pos // 2K clear entire line - cur pos dosn't change
-			//print Z4 Message
-			mzmsg_write(&zone2, "\e7\e[2K\rZ4 > ", 12);
 			switch (msg[0]) {
-				case 'p' : mzmsg_write(&zone2, "ping", 4); msg[0] = 'P'; ECALL_SEND(4, (void*)msg); break;
-				case 'P' : mzmsg_write(&zone2, "pong", 4); break;
-				default  : mzmsg_write(&zone2, (char *) &msg[0], strlen((const char *) msg)); break;
+				case 'p' :	msg[0] = 'P'; ECALL_SEND(4, (void*)msg);
+							break;
+				case 'P' :	mzmsg_write(&zone2, "\e7\e[2K", 6);
+							mzmsg_write(&zone2, "\rZ4 > pong\r\n", 12); 
+							mzmsg_write(&zone2, "\nZ1 > ", 6);
+							mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
+							mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
+							break;
+				default  :	break;
 			}
-			mzmsg_write(&zone2, "\r\n\nZ1 > ", 8);
-			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
-			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
 		}
 
 
 		uint32_t ulNotificationValue = 0;
 
 		if( xTaskNotifyWait( 0x00, 0x00, &ulRobotValue, 0) == pdTRUE ) {
-			mzmsg_write(&zone2, "\e7\e[2K", 6); // save curs pos // 2K clear entire line - cur pos dosn't change
+			//mzmsg_write(&zone2, "\e7\e[2K", 6); // save curs pos // 2K clear entire line - cur pos dosn't change
 			switch(ulRobotValue) {
-				case 0: sprintf(print_buffer, "\rZ1 > USB DEVICE DETACH\r\n"); break;
-				case 1: sprintf(print_buffer, "\rZ1 > USB DEVICE ATTACH VID=0x1267 PID=0x0000\r\n"); break;
+				case 0: sprintf(print_buffer, "\rZ1 > USB DEVICE DETACH\r\n"); 
+						mzmsg_write(&zone2, print_buffer, strlen(print_buffer)); 
+						break;
+				case 1: sprintf(print_buffer, "\rZ1 > USB DEVICE ATTACH VID=0x1267 PID=0x0000\r\n");
+						mzmsg_write(&zone2, print_buffer, strlen(print_buffer)); 
+						mzmsg_write(&zone2, (char*)robotinfo_msg, strlen(robotinfo_msg)); 
+						break;
 			}
-			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
 			mzmsg_write(&zone2, "\nZ1 > ", 6);
 			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
-			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
+			//mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
 		}
 
 		if( xQueueReceive( xbuttons_queue, &ulNotificationValue, 0) == pdTRUE ) {
