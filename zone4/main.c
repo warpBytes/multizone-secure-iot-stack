@@ -438,7 +438,8 @@ void print_pmp_ranges(void){
 			case 216 : write(1, "\rZ1 > CLINT IRQ 16 [BTN0]\r\n", 27); break;
 			case 217 : write(1, "\rZ1 > CLINT IRQ 17 [BTN1]\r\n", 27); break;
 			case 218 : write(1, "\rZ1 > CLINT IRQ 18 [BTN2]\r\n", 27); break;
-			case 'p' : write(1, "\rZ1 > pong\r\n", 12); break;
+			case 'p' : write(1, "\rZ1 > ping\r\n", 12); msg[0] = 'P'; ECALL_SEND(1, (void*)msg); break;
+			case 'P' : write(1, "\rZ1 > pong\r\n", 12); break;
 			default  : write(1, "\rZ1 > ", 6); write(1, &msg[0], strlen(msg));	write(1, "\r\n", 2); break;
 			}
 
