@@ -409,15 +409,34 @@ static char history[CMD_LINE_SIZE+1]="";
             }
 		}
 
-		// poll & print incoming messages
+
 		int msg[4]={0,0,0,0};
+		// poll & print Zone1 incoming messages
+		ECALL_RECV(1, msg);
+		if (msg[0]){
+			// save curs pos // 2K clear entire line - cur pos dosn't change
+			//print Z4 Message
+			mzmsg_write(&zone2, "\e7\e[2K\rZ1 > ", 12);
+			switch (msg[0]) {
+				case 'p' : mzmsg_write(&zone2, "ping", 4); msg[0] = 'P'; ECALL_SEND(1, (void*)msg); break;
+				case 'P' : mzmsg_write(&zone2, "pong", 4); break;
+				default  : mzmsg_write(&zone2, (char *) &msg[0], strlen((const char *) msg)); break;
+			}
+			mzmsg_write(&zone2, "\r\n\nZ1 > ", 8);
+			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
+			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
+		}
+
+
+		// poll & print Zone4 incoming messages
 		ECALL_RECV(4, msg);
 		if (msg[0]){
 			// save curs pos // 2K clear entire line - cur pos dosn't change
 			//print Z4 Message
 			mzmsg_write(&zone2, "\e7\e[2K\rZ4 > ", 12);
 			switch (msg[0]) {
-				case 'p' : mzmsg_write(&zone2, "pong", 4); break;
+				case 'p' : mzmsg_write(&zone2, "ping", 4); msg[0] = 'P'; ECALL_SEND(4, (void*)msg); break;
+				case 'P' : mzmsg_write(&zone2, "pong", 4); break;
 				default  : mzmsg_write(&zone2, (char *) &msg[0], strlen((const char *) msg)); break;
 			}
 			mzmsg_write(&zone2, "\r\n\nZ1 > ", 8);
@@ -435,7 +454,7 @@ static char history[CMD_LINE_SIZE+1]="";
 				case 1: sprintf(print_buffer, "\rZ1 > USB DEVICE ATTACH VID=0x1267 PID=0x0000\r\n"); break;
 			}
 			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-			mzmsg_write(&zone2, "\nZ1 > ", 8);
+			mzmsg_write(&zone2, "\nZ1 > ", 6);
 			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
 			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
 		}
@@ -448,7 +467,7 @@ static char history[CMD_LINE_SIZE+1]="";
 				case 218 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 18 [BTN2]\r\n"); break;
 			}
 			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-			mzmsg_write(&zone2, "\nZ1 > ", 8);
+			mzmsg_write(&zone2, "\nZ1 > ", 6);
 			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
 			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
 		}
@@ -523,79 +542,36 @@ void cliTask( void *pvParameters){
 
 		} else if (tk1 != NULL && strcmp(tk1, "send")==0){
 			if (tk2 != NULL && tk2[0]>='1' && tk2[0]<='4' && tk3 != NULL){
-				xQueueSend( robot_queue, tk3, 0 );
-/*				if(tk2[0]=='1'){
+				if(tk2[0]=='1'){
 					char c = (char) *tk3;
 					switch (c) {
-						case 'q' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: grip close\r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case 'a' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: grip open\r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case 'w' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: wrist up\r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case 's' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: wrist down\r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case 'e' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: elbow up\r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case 'd' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: elbow down\r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case 'r' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: shoulder up \r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case 'f' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: shoulder down \r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case 't' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: base clockwise \r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case 'g' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)? "Robot: base counterclockwise \r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case 'y' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)?"Robot: light on \r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case '>' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)?"Robot: Unfold \r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case '<' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)?"Robot: Fold \r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
-						case '1' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)?"Robot: Start dancing \r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-									break;
+						case 'q' : 	
+						case 'a' : 	
+						case 'w' : 	
+						case 's' : 
+						case 'e' : 
+						case 'd' : 	
+						case 'r' : 
+						case 'f' : 
+						case 't' : 
+						case 'g' : 
+						case 'y' : 	
+						case '>' : 	
+						case '<' : 
+						case '1' : 
 						case '0' : 	xQueueSend( robot_queue, &c, 0 ); 
-									sprintf(print_buffer, (char *) (ulRobotValue==1)?"Robot: Stop dancing \r\n":roboterror_msg);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
 									break;
-						case 'h' :	mzmsg_write(&zone2,  (char *) robotinfo_msg, strlen(robotinfo_msg));
-									break;
-						default  :	sprintf(print_buffer, "Z1 > %c \r\n", tk3[0]);
-									mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+						default  :	
+									msg[0]=(unsigned int)*tk3; msg[1]=0; msg[2]=0; msg[3]=0;
+									ECALL_SEND(tk2[0]-'0', msg);
 									break;
 					}
-				}*/
-				msg[0]=(unsigned int)*tk3; msg[1]=0; msg[2]=0; msg[3]=0;
-				ECALL_SEND(tk2[0]-'0', msg);
+				}
+				else{
+					msg[0]=(unsigned int)*tk3; msg[1]=0; msg[2]=0; msg[3]=0;
+					ECALL_SEND(tk2[0]-'0', msg);
+				}
+				
 			} else {
 				sprintf(print_buffer, "Syntax: send {1|2|3|4} message \r\n");
 				mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
