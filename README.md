@@ -18,7 +18,7 @@ Hardware prerequisites: Xilinx Artix-7 35T Arty, Xilinx Vivado, Olimex ARM-USB-T
  - Download the X300 bitstream .mcs file from https://github.com/hex-five/multizone-fpga/releases
  - Program the .mcs file to the Arty board using Vivado
 
-Software requirements: Install the reference RISC-V toolchain for Linux - directions specific to a fresh Ubuntu 18.04 LTS, other Linux distros generally a subset. To connect via TLS you'll need a TLS 1.3 client. If you itend to use openssl, make sure you have version 1.1.1a or greater. Openssl included in Debian stretch and Ubuntu   
+Software requirements: Install the reference RISC-V toolchain for Linux - directions specific to a fresh Ubuntu 18.04 LTS, other Linux distros generally a subset. To connect via TLS you'll need a TLS 1.3 client. If you itend to use OpenSSL, make sure you have version 1.1.1a or greater. At the time of writing, OpenSSL included in Debian 9 (stretch) and Ubuntu 18.04.2 is version 1.1.0, which does not support TLS 1.3.   
  ```
  sudo apt update
  sudo apt upgrade -y
@@ -70,7 +70,7 @@ make clean
 make
 ```
 
-This will result in a HEX file that is now ready to upload to the Arty board.  The first time you push this HEX file up it takes about 2 minutes, on subsequent passes it goes much faster.
+This will result in a HEX file that is now ready to upload to the Arty board. There is know issue with the first upload after board power-on: if it upload takes more than a few seconds you may want to kill the openocd/gdb process and repeat the make load. Otherwise the first load may take up to two minutes.
 ```
 make load
 ```
@@ -83,10 +83,11 @@ The system contains four zones:
  - Zone 2: TCP/IP + TLS Stack (picoTCP + wolfSSL) - accessable via ethernet port
    - Ping to 192.168.0.2 (default address, set in Makefile)
    - Telnet to port 23
-   - Connect securely via a TLS 1.3 client to port 443
+   - Connect via TLS: stty -icanon -echo && openssl s_client -tls1_3 -crlf -nocommands -connect 192.168.0.2:443
  - Zone 3: Root of Trust and Session Key Storage
  - Zone 4: MultiZone Console - access via USB UART at 115,200 buard 8N1
-   - Press enter for a list of supported commands
+ 
+ Press enter for a list of supported commands
 
 ### Crypto specs ###
 ```
