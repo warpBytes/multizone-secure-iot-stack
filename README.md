@@ -10,16 +10,13 @@ This reference implementation combines freeRTOS, picoTCP, wolfSSL and Root of Tr
  - Zone 3: Root of Trust
  - Zone 4: USB UART Console
 
-This repository, maintained by Hex Five Security, makes it easy to build a robust Secure IoT Stack with four Zones based on MultiZone Security.
-
 ### Installation ###
 
-Hex Five created a modified version of the Rocket SoC called teh X300 with an additional Ethernet port and improved performance
+The MultiZone Secure IoT Stack supports a multitude of hardware targets. For a complete evaluation of the framework it is reccomended to use the open source sofcore X300 developed by Hex Five Security, which is an enhanced version of the E300 SoC (Rocket) maintained by SiFive - entirely free for commercial and non-commercial use. Like the E300, the X300 is designed to be mapped onto a Xilinx Artix-7 35T Arty FPGA.
 
-Upload the X300 Bitstream to a Xilinx Artik-7 35T Arty FPGA board
-prerequisites: Xilinx Vivado, Olimex ARM-USB-TINY-H Debugger
+Prerequisites: Xilinx Vivado, Olimex ARM-USB-TINY-H Debugger
  - Download the X300 bitstream .mcs file from https://github.com/hex-five/multizone-fpga/releases
- - Push the .mcs file to the Arty board using Vivado
+ - Program the .mcs file to the Arty board using Vivado
 
  Install the reference RISC-V toolchain for Linux - directions specific to a fresh Ubuntu 18.04 LTS, other Linux distros generally a subset
  ```
@@ -90,6 +87,40 @@ The system contains four zones:
  - Zone 3: Root of Trust and Session Key Storage
  - Zone 4: UART Console - access via USB UART at 115,200 buard 8N1
    - Press enter for a list of supported commands
+
+### Crypto specs ###
+```
+TLSv1.3, Cipher TLS_AES_128_GCM_SHA256
+Peer signing digest: SHA256
+Peer signature type: ECDSA
+Server Temp Key: ECDH, P-256, 256 bits
+Server public key is 256 bit
+Private Key ASN1 OID: prime256v1
+Private Key NIST CURVE: P-256
+```
+
+### X300 specs ###
+
+X300 is an enhanced version of [SiFive's Freedom E300
+Platform](https://github.com/sifive/freedom/tree/3624efff1819e52cec30c72f9085158189f8b53f)
+to support [MultiZone](https://hex-five.com/products/) and IoT applications.
+The X300 is completely open source and free of charge for commercial and non-commercial use.
+
+| E300             | X300                                         |
+| ---------------- | -------------------------------------------- |
+| RV32ACIM         | RV32ACIMU                                    |
+| 32.5 MHz clock   | 65 MHz clock                                 |
+| 2 HW breakpoints | 8 HW breakpoints                             |
+| no Ethernet core | Xilinx EthernetLite Ethernet core            |
+| 1-way icache     | 4-way icache                                 |
+| no ITIM          | ITIM at 0x0800\_0000                         |
+| 16 kB DTIM       | 64 kB DTIM                                   |
+| no perf counters | 2 perf counters, hpmcounter3 and hpmcounter4 |
+| no CLICs         | 3 CLICs (BTN0, BTN1 and BTN2)                |
+
+### Legalities ###
+
+Please remember that export/import and/or use of strong cryptography software, providing cryptography hooks, or even just communicating technical details about cryptography software is illegal in some parts of the world. So when you import this software to your country, re-distribute it from there or even just email technical suggestions or even source patches to the authors or other people you are strongly advised to pay close attention to any laws or regulations which apply to you. Hex Five Security, Inc. and the authors of the software included in this repository are not liable for any violations you make here. So be careful, it is your responsibility. 
 
 ### For More Information ###
 
