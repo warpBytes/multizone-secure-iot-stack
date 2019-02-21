@@ -12,7 +12,7 @@ This reference implementation combines freeRTOS, picoTCP, wolfSSL and Root of Tr
 
 ### Installation ###
 
-The MultiZone Secure IoT Stack supports a multitude of hardware targets. For a complete evaluation of the framework it is reccomended to use the open source sofcore X300 developed by Hex Five Security, which is an enhanced version of the E300 SoC (Rocket) maintained by SiFive - entirely free for commercial and non-commercial use. Like the E300, the X300 is designed to be mapped onto a Xilinx Artix-7 35T Arty FPGA.
+The MultiZone Secure IoT Stack supports a multitude of hardware targets. For a complete evaluation of the framework it is reccomended to use the open source softcore X300 developed by Hex Five Security. It is an enhanced version of the E300 SoC (Rocket) maintained by SiFive - entirely free for commercial and non-commercial use. Like the E300, the X300 is designed to be programmed onto a Xilinx Artix-7 35T Arty FPGA.
 
 Hardware prerequisites: Xilinx Artix-7 35T Arty, Xilinx Vivado, Olimex ARM-USB-TINY-H Debugger
  - Download the X300 bitstream .mcs file from https://github.com/hex-five/multizone-fpga/releases
