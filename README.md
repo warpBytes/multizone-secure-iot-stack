@@ -14,11 +14,11 @@ This reference implementation combines freeRTOS, picoTCP, wolfSSL and Root of Tr
 
 The MultiZone Secure IoT Stack supports a multitude of hardware targets. For a complete evaluation of the framework it is reccomended to use the open source sofcore X300 developed by Hex Five Security, which is an enhanced version of the E300 SoC (Rocket) maintained by SiFive - entirely free for commercial and non-commercial use. Like the E300, the X300 is designed to be mapped onto a Xilinx Artix-7 35T Arty FPGA.
 
-Prerequisites: Xilinx Vivado, Olimex ARM-USB-TINY-H Debugger
+Hardware prerequisites: Xilinx Artix-7 35T Arty, Xilinx Vivado, Olimex ARM-USB-TINY-H Debugger
  - Download the X300 bitstream .mcs file from https://github.com/hex-five/multizone-fpga/releases
  - Program the .mcs file to the Arty board using Vivado
 
- Install the reference RISC-V toolchain for Linux - directions specific to a fresh Ubuntu 18.04 LTS, other Linux distros generally a subset
+Software requirements: Install the reference RISC-V toolchain for Linux - directions specific to a fresh Ubuntu 18.04 LTS, other Linux distros generally a subset. To connect via TLS you'll need a TLS 1.3 client. If you itend to use openssl, make sure you have version 1.1.1a or greater. Openssl included in Debian stretch and Ubuntu   
  ```
  sudo apt update
  sudo apt upgrade -y
@@ -83,9 +83,9 @@ The system contains four zones:
  - Zone 2: TCP/IP + TLS Stack (picoTCP + wolfSSL) - accessable via ethernet port
    - Ping to 192.168.0.2 (default address, set in Makefile)
    - Telnet to port 23
-   - Secure telnet (TLS) to port 443
+   - Connect securely via a TLS 1.3 client to port 443
  - Zone 3: Root of Trust and Session Key Storage
- - Zone 4: UART Console - access via USB UART at 115,200 buard 8N1
+ - Zone 4: MultiZone Console - access via USB UART at 115,200 buard 8N1
    - Press enter for a list of supported commands
 
 ### Crypto specs ###
