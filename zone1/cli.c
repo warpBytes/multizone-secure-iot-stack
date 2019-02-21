@@ -414,34 +414,30 @@ static char history[CMD_LINE_SIZE+1]="";
 		// poll & print Zone1 incoming messages
 		ECALL_RECV(1, msg);
 		if (msg[0]){
-			// save curs pos // 2K clear entire line - cur pos dosn't change
-			//print Z4 Message
-			mzmsg_write(&zone2, "\e7\e[2K\rZ1 > ", 12);
 			switch (msg[0]) {
-				case 'p' : mzmsg_write(&zone2, "ping", 4); msg[0] = 'P'; ECALL_SEND(1, (void*)msg); break;
-				case 'P' : mzmsg_write(&zone2, "pong", 4); break;
-				default  : mzmsg_write(&zone2, (char *) &msg[0], strlen((const char *) msg)); break;
+				case 'p' : msg[0] = 'P'; ECALL_SEND(1, (void*)msg); break;
+				case 'P' : mzmsg_write(&zone2, "\e7\e[2K\rZ1 > pong\r\n", 18);
+							mzmsg_write(&zone2, "\nZ1 > ", 6);
+							mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
+							mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
+							break;
+				default  : break;
 			}
-			mzmsg_write(&zone2, "\r\n\nZ1 > ", 8);
-			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
-			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
 		}
 
 
 		// poll & print Zone4 incoming messages
 		ECALL_RECV(4, msg);
 		if (msg[0]){
-			// save curs pos // 2K clear entire line - cur pos dosn't change
-			//print Z4 Message
-			mzmsg_write(&zone2, "\e7\e[2K\rZ4 > ", 12);
 			switch (msg[0]) {
-				case 'p' : mzmsg_write(&zone2, "ping", 4); msg[0] = 'P'; ECALL_SEND(4, (void*)msg); break;
-				case 'P' : mzmsg_write(&zone2, "pong", 4); break;
-				default  : mzmsg_write(&zone2, (char *) &msg[0], strlen((const char *) msg)); break;
+				case 'p' : msg[0] = 'P'; ECALL_SEND(4, (void*)msg); break;
+				case 'P' : mzmsg_write(&zone2, "\e7\e[2K\rZ4 > pong\r\n", 18); 
+							mzmsg_write(&zone2, "\nZ1 > ", 6);
+							mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
+							mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
+							break;
+				default  : break;
 			}
-			mzmsg_write(&zone2, "\r\n\nZ1 > ", 8);
-			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
-			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
 		}
 
 
