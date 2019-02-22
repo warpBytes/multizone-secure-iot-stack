@@ -106,6 +106,10 @@ int main(void)
 }
 /*-----------------------------------------------------------*/
 
+static uint8_t button_0_handling;
+static uint8_t button_1_handling;
+static uint8_t button_2_handling;
+
 static void ledFadeTask( void *pvParameters )
 {
     uint16_t r=0x3F;
@@ -143,6 +147,9 @@ static void ledFadeTask( void *pvParameters )
 
         }
         else {
+            button_0_handling = 0;
+            button_1_handling = 0;
+            button_2_handling = 0;
             ulTicksToWait = 20/portTICK_PERIOD_MS;
 
             if(r > 0 && b == 0){ r--; g++; }
@@ -162,36 +169,46 @@ void button_0_handler(void){ // local interrupt
 
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-	GPIO_REG(GPIO_RISE_IP)  |= (1<<BUTTON_0_OFFSET);
+    GPIO_REG(GPIO_RISE_IP)  |= (1<<BUTTON_0_OFFSET);
 
-    xTaskNotifyFromISR( ledfade_task, 216, eSetValueWithOverwrite, &xHigherPriorityTaskWoken );
+    if (!button_0_handling) {
+        button_0_handling = 1;
+
+        xTaskNotifyFromISR( ledfade_task, 216, eSetValueWithOverwrite, &xHigherPriorityTaskWoken );
+    }
 
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
 }
 
 void button_1_handler(void){ // local interrupt
 
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-	GPIO_REG(GPIO_RISE_IP)  |= (1<<BUTTON_1_OFFSET);
+    GPIO_REG(GPIO_RISE_IP)  |= (1<<BUTTON_1_OFFSET);
 
-    xTaskNotifyFromISR( ledfade_task, 217, eSetValueWithOverwrite, &xHigherPriorityTaskWoken );
-    
+    if (!button_1_handling) {
+        button_1_handling = 1;
+
+
+        xTaskNotifyFromISR( ledfade_task, 217, eSetValueWithOverwrite, &xHigherPriorityTaskWoken );
+    }
+
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
-
 }
 
 void button_2_handler(void){ // local interrupt
 
     BaseType_t xHigherPriorityTaskWoken = pdFALSE;
 
-	GPIO_REG(GPIO_RISE_IP)  |= (1<<BUTTON_2_OFFSET);
+    GPIO_REG(GPIO_RISE_IP)  |= (1<<BUTTON_2_OFFSET);
 
-    xTaskNotifyFromISR( ledfade_task, 218, eSetValueWithOverwrite, &xHigherPriorityTaskWoken );
+    if (!button_2_handling) {
+        button_2_handling = 1;
+
+        xTaskNotifyFromISR( ledfade_task, 218, eSetValueWithOverwrite, &xHigherPriorityTaskWoken );
+    }
 
     portYIELD_FROM_ISR(xHigherPriorityTaskWoken);
- 
 }
 
 /*-----------------------------------------------------------*/
