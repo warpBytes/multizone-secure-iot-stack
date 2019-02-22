@@ -563,8 +563,10 @@ void cliTask( void *pvParameters){
 									ECALL_SEND(tk2[0]-'0', msg);
 									break;
 					}
-				}
-				else{
+				} else if(tk2[0] - '0' == zone2.zone) {
+					sprintf(print_buffer, "Cannot send to that zone, channel is used by mzmsg!\r\n");
+					mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+				} else {
 					msg[0]=(unsigned int)*tk3; msg[1]=0; msg[2]=0; msg[3]=0;
 					ECALL_SEND(tk2[0]-'0', msg);
 				}
@@ -575,7 +577,10 @@ void cliTask( void *pvParameters){
 			}
 		} else if (tk1 != NULL && strcmp(tk1, "recv")==0){
 			if (tk2 != NULL && tk2[0]>='1' && tk2[0]<='4'){
-				if(tk2[0] != '2') {
+				if(tk2[0] - '0' == zone2.zone) {
+					sprintf(print_buffer, "Cannot recv from that zone, channel is used by mzmsg!\r\n");
+					mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+				} else {
 					ECALL_RECV(tk2[0]-'0', msg);
 					sprintf(print_buffer, "msg : 0x%08x 0x%08x 0x%08x 0x%08x \r\n", msg[0], msg[1], msg[2], msg[3]);
 					mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
