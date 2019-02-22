@@ -93,6 +93,7 @@ int mzmsg_read(mzmsg_t *mzmsg, char *buf, size_t len){
             mzmsg->last_index = mzmsg->in[IND];
             mzmsg->out[ACK] = mzmsg->in[IND];
             mzmsg->out[CTL] |= CTL_ACK;
+            mzmsg->out[CTL] |= CTL_PSH;
 
             mzmsg_flush(mzmsg);
         } else {
