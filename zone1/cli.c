@@ -575,9 +575,11 @@ void cliTask( void *pvParameters){
 			}
 		} else if (tk1 != NULL && strcmp(tk1, "recv")==0){
 			if (tk2 != NULL && tk2[0]>='1' && tk2[0]<='4'){
-				ECALL_RECV(tk2[0]-'0', msg);
-				sprintf(print_buffer, "msg : 0x%08x 0x%08x 0x%08x 0x%08x \r\n", msg[0], msg[1], msg[2], msg[3]);
-				mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+				if(tk2[0] != '2') {
+					ECALL_RECV(tk2[0]-'0', msg);
+					sprintf(print_buffer, "msg : 0x%08x 0x%08x 0x%08x 0x%08x \r\n", msg[0], msg[1], msg[2], msg[3]);
+					mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+				}
 			} else {
 				sprintf(print_buffer, "Syntax: recv {1|2|3|4} \r\n");
 				mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
