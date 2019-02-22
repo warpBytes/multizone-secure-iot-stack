@@ -27,13 +27,13 @@ static const char taskinfo_msg[] =
 
 static const char robotinfo_msg[] =
 	"Syntax: send 1 {q|a|w|s|e|d|r|f|t|g|y|>|<|1|0}\r\n"
-	"     'q' - grip close      'a' - grip open\r\n"
-	"     'w' - wrist up        's' - wrist down\r\n"
-	"     'e' - elbow up        'd' - elbow down\r\n"
-	"     'r' - shoulder up     'f' - shoulder down\r\n"
-	"     't' - base clockwise  'g' - base counterclockwise\r\n"
-	"     '>' - unfold          '<' - fold\r\n"	
-	"     '1' - start dancing   '0' - stop dancing\r\n"
+	"     'q' - grip close            'a' - grip open\r\n"
+	"     'w' - wrist up              's' - wrist down\r\n"
+	"     'e' - elbow up              'd' - elbow down\r\n"
+	"     'r' - shoulder up           'f' - shoulder down\r\n"
+	"     't' - base clockwise        'g' - base counterclockwise\r\n"
+	"     '>' - unfold                '<' - fold\r\n"
+	"     '1' - start robot sequence  '0' - stop robot sequence\r\n"
 	"     'y' - light on\r\n"
 ;
 
