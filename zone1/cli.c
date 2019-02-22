@@ -420,6 +420,19 @@ static char history[CMD_LINE_SIZE+1]="";
 			}
 		}
 
+		// poll & print Zone3 incoming messages
+		ECALL_RECV(3, msg);
+		if (msg[0]){
+			switch (msg[0]) {
+				case 'p' :	mzmsg_write(&zone2, "\e7\e[2K", 6);
+							mzmsg_write(&zone2, "\rZ3 > pong\r\n", 12);
+							mzmsg_write(&zone2, "\nZ3 > ", 6);
+							mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
+							mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
+							break;
+				default  :	break;
+			}
+		}
 
 		// poll & print Zone4 incoming messages
 		ECALL_RECV(4, msg);
