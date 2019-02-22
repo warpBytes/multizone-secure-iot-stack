@@ -405,25 +405,22 @@ void print_pmp_ranges(void){
 			}
 		}
 
+		// poll & print Zone2 incoming messages
 		ECALL_RECV(2, msg);
 		if (msg[0]){
-
-			write(1, "\e7", 2); // save curs pos
-			write(1, "\e[2K", 4); // 2K clear entire line - cur pos dosn't change
-
 			switch (msg[0]) {
-			case 'p' : write(1, "\rZ2 > pong\r\n", 12); break;
-			default  : write(1, "\rZ2 > ???\r\n", 11); break;
+				case 'p' :	write(1, "\e7\e[2K", 6);
+							write(1, "\rZ2 > pong\r\n", 12); 
+							write(1, "\nZ4 > ", 6);
+							write(1, &cmd_line[0], strlen(cmd_line));
+							write(1, "\e8\e[2B", 6);   // restore curs pos // curs down down
+							break;
+				default  :	break;
 			}
-
-			write(1, "\nZ4 > ", 6);
-			write(1, &cmd_line[0], strlen(cmd_line));
-			write(1, "\e8", 2);   // restore curs pos
-			write(1, "\e[2B", 4); // curs down down
 		}
 
+		// poll & print Zone3 incoming messages
 		ECALL_RECV(3, msg);
-
 		if (msg[0]){
 
 			write(1, "\e7", 2); // save curs pos
@@ -442,6 +439,7 @@ void print_pmp_ranges(void){
 		}
 
 		char skip_print = 0;
+		// poll & print Zone1 incoming messages
 		ECALL_RECV(1, msg);
 		if (msg[0]){
 
