@@ -132,7 +132,7 @@ static void ledFadeTask( void *pvParameters )
         xEvent = xTaskNotifyWait( 0x00, ULONG_MAX, &ulNotificationValue, ulTicksToWait);
 
         if(xEvent == pdTRUE) {        
-            ulTicksToWait = 3000/portTICK_PERIOD_MS;
+            ulTicksToWait = 500/portTICK_PERIOD_MS;
             switch (ulNotificationValue)
             {
                 case 216: LD1_RED_OFF; LD1_GRN_OFF; LD1_BLU_ON;
