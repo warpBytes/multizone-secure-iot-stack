@@ -123,6 +123,10 @@ int main(void)
                 break;
         }
 
+        ECALL_RECV(1, msg);
+        if (msg[0]) ECALL_SEND(1, msg);
+        ECALL_RECV(4, msg);
+        if (msg[0]) ECALL_SEND(4, msg);
         ECALL_YIELD();
     }
 }
