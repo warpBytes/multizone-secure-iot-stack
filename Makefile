@@ -52,12 +52,10 @@ export RISCV_ABI
 # Rules for building multizone
 #############################################################
 
-MZMSG_CHARS ?= 4
-
 .PHONY: all 
 all: 
-	$(MAKE) -C zone1 MZMSG_CHARS="$(MZMSG_CHARS)"
-	$(MAKE) -C zone2 IPADDR="$(IPADDR)" NETMASK="$(NETMASK)" MZMSG_CHARS="$(MZMSG_CHARS)"
+	$(MAKE) -C zone1
+	$(MAKE) -C zone2 IPADDR="$(IPADDR)" NETMASK="$(NETMASK)"
 	$(MAKE) -C zone3
 	$(MAKE) -C zone4
 	java -jar ext/multizone/multizone.jar -c bsp/$(BOARD)/multizone.cfg zone1/zone1.hex zone2/zone2.hex zone3/zone3.hex zone4/zone4.hex --arch=$(BOARD)

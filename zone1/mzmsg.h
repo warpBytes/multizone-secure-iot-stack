@@ -5,6 +5,8 @@
 
 #include <stddef.h>
 
+#define MZMSG_CHARS 4
+
 typedef struct {
     int zone;
     int out[4];

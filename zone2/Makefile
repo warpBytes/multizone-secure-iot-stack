@@ -95,8 +95,6 @@ ifneq ($(NETMASK),)
 	CFLAGS += -DNETMASK="$(NETMASK)"
 endif
 
-CFLAGS += -DMZMSG_CHARS="$(MZMSG_CHARS)"
-
 PICOTCP_SRC_DIR := ../ext/picotcp
 INCLUDES += -I. -I../ext/multizone -I$(PICOTCP_SRC_DIR)/build/include -I$(WOLFSSL_SRC_DIR)
 LDFLAGS += -L../ext/multizone -L$(PICOTCP_SRC_DIR)/build/lib

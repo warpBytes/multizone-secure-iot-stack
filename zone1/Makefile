@@ -5,8 +5,6 @@ TARGET = zone1.elf
 CFLAGS += -O2
 LDFLAGS += -static --specs=nosys.specs 
 
-CFLAGS += -DMZMSG_CHARS="$(MZMSG_CHARS)"
-
 BSP_BASE := ../bsp
 PLATFORM_DIR := $(BSP_BASE)/$(BOARD)
 NEWLIB_DIR := $(PLATFORM_DIR)/newlib
