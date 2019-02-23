@@ -27,13 +27,13 @@ static const char taskinfo_msg[] =
 
 static const char robotinfo_msg[] =
 	"Syntax: send 1 {q|a|w|s|e|d|r|f|t|g|y|>|<|1|0}\r\n"
-	"     'q' - grip close      'a' - grip open\r\n"
-	"     'w' - wrist up        's' - wrist down\r\n"
-	"     'e' - elbow up        'd' - elbow down\r\n"
-	"     'r' - shoulder up     'f' - shoulder down\r\n"
-	"     't' - base clockwise  'g' - base counterclockwise\r\n"
-	"     '>' - unfold          '<' - fold\r\n"	
-	"     '1' - start dancing   '0' - stop dancing\r\n"
+	"     'q' - grip close            'a' - grip open\r\n"
+	"     'w' - wrist up              's' - wrist down\r\n"
+	"     'e' - elbow up              'd' - elbow down\r\n"
+	"     'r' - shoulder up           'f' - shoulder down\r\n"
+	"     't' - base clockwise        'g' - base counterclockwise\r\n"
+	"     '>' - unfold                '<' - fold\r\n"
+	"     '1' - start robot sequence  '0' - stop robot sequence\r\n"
 	"     'y' - light on\r\n"
 ;
 
@@ -420,6 +420,19 @@ static char history[CMD_LINE_SIZE+1]="";
 			}
 		}
 
+		// poll & print Zone3 incoming messages
+		ECALL_RECV(3, msg);
+		if (msg[0]){
+			switch (msg[0]) {
+				case 'p' :	mzmsg_write(&zone2, "\e7\e[2K", 6);
+							mzmsg_write(&zone2, "\rZ3 > pong\r\n", 12);
+							mzmsg_write(&zone2, "\nZ3 > ", 6);
+							mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
+							mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
+							break;
+				default  :	break;
+			}
+		}
 
 		// poll & print Zone4 incoming messages
 		ECALL_RECV(4, msg);
@@ -563,8 +576,10 @@ void cliTask( void *pvParameters){
 									ECALL_SEND(tk2[0]-'0', msg);
 									break;
 					}
-				}
-				else{
+				} else if(tk2[0] - '0' == zone2.zone) {
+					sprintf(print_buffer, "Cannot send to that zone, channel is used by mzmsg!\r\n");
+					mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+				} else {
 					msg[0]=(unsigned int)*tk3; msg[1]=0; msg[2]=0; msg[3]=0;
 					ECALL_SEND(tk2[0]-'0', msg);
 				}
@@ -575,9 +590,14 @@ void cliTask( void *pvParameters){
 			}
 		} else if (tk1 != NULL && strcmp(tk1, "recv")==0){
 			if (tk2 != NULL && tk2[0]>='1' && tk2[0]<='4'){
-				ECALL_RECV(tk2[0]-'0', msg);
-				sprintf(print_buffer, "msg : 0x%08x 0x%08x 0x%08x 0x%08x \r\n", msg[0], msg[1], msg[2], msg[3]);
-				mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+				if(tk2[0] - '0' == zone2.zone) {
+					sprintf(print_buffer, "Cannot recv from that zone, channel is used by mzmsg!\r\n");
+					mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+				} else {
+					ECALL_RECV(tk2[0]-'0', msg);
+					sprintf(print_buffer, "msg : 0x%08x 0x%08x 0x%08x 0x%08x \r\n", msg[0], msg[1], msg[2], msg[3]);
+					mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
+				}
 			} else {
 				sprintf(print_buffer, "Syntax: recv {1|2|3|4} \r\n");
 				mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
