@@ -29,6 +29,8 @@ Software requirements: Install the reference RISC-V toolchain for Linux - direct
  wget https://github.com/hex-five/multizone-sdk/releases/download/v0.1.0/riscv-openocd-20181226.tar.xz
  tar -xvf riscv-openocd-20181226.tar.xz
  git clone https://github.com/hex-five/multizone-secure-iot-stack
+ cd multizone-secure-iot.stack
+ git submodule update --init --recursive
  sudo apt-get install libusb-0.1-4
  sudo apt-get install screen
 ```
@@ -82,7 +84,7 @@ The system contains four zones:
    - Press enter for a list of support commands
  - Zone 2: TCP/IP + TLS Stack (picoTCP + wolfSSL) - accessable via ethernet port
    - Ping to 192.168.0.2 (default address, set in Makefile)
-   - Telnet to port 23
+   - Telnet to port 23 or
    - Connect via TLS: stty -icanon -echo && openssl s_client -tls1_3 -crlf -nocommands -connect 192.168.0.2:443
  - Zone 3: Root of Trust and Session Key Storage
  - Zone 4: MultiZone Console - access via USB UART at 115,200 buard 8N1
