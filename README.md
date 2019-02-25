@@ -127,4 +127,4 @@ Please remember that export/import and/or use of strong cryptography software, p
 
 ### For More Information ###
 
-See the MultiZone Manual (Pending) or visit [http://www.hex-five.com](https://www.hex-five.com)
+See manula.pdf or visit [http://www.hex-five.com](https://www.hex-five.com)
