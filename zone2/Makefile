@@ -110,8 +110,8 @@ CFLAGS += -Os -g3
 
 .PHONY: picotcp
 picotcp:
-	cd $(PICOTCP_SRC_DIR) && $(MAKE) clean
-	cd $(PICOTCP_SRC_DIR) && $(MAKE) \
+	cd $(PICOTCP_SRC_DIR) && "$(MAKE)" clean
+	cd $(PICOTCP_SRC_DIR) && "$(MAKE)" \
 		CROSS_COMPILE=$(abspath $(RISCV))/bin/riscv64-unknown-elf- \
 		ARCH=rv32 \
 		STRIP=0 \

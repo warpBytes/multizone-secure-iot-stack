@@ -54,18 +54,18 @@ export RISCV_ABI
 
 .PHONY: all 
 all: 
-	$(MAKE) -C zone1
-	$(MAKE) -C zone2 IPADDR="$(IPADDR)" NETMASK="$(NETMASK)"
-	$(MAKE) -C zone3
-	$(MAKE) -C zone4
+	"$(MAKE)" -C zone1
+	"$(MAKE)" -C zone2 IPADDR="$(IPADDR)" NETMASK="$(NETMASK)"
+	"$(MAKE)" -C zone3
+	"$(MAKE)" -C zone4
 	java -jar ext/multizone/multizone.jar -c bsp/$(BOARD)/multizone.cfg zone1/zone1.hex zone2/zone2.hex zone3/zone3.hex zone4/zone4.hex --arch=$(BOARD)
 
 .PHONY: clean
 clean: 
-	$(MAKE) -C zone1 clean
-	$(MAKE) -C zone2 clean
-	$(MAKE) -C zone3 clean
-	$(MAKE) -C zone4 clean
+	"$(MAKE)" -C zone1 clean
+	"$(MAKE)" -C zone2 clean
+	"$(MAKE)" -C zone3 clean
+	"$(MAKE)" -C zone4 clean
 	rm -f multizone.hex
 
 
