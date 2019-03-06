@@ -5,6 +5,7 @@
 
 #include <stdio.h>
 
+#include <wolfssl/wolfcrypt/asn_public.h>
 #include <wolfssl/wolfcrypt/ecc.h>
 
 WC_RNG rng;
