@@ -105,7 +105,7 @@ CLEAN_OBJS += $(PICOTCP_SRC_DIR)/build
 
 include $(NEWLIB_DIR)/newlib.mk
 
-CFLAGS += -Os -g3
+CFLAGS += -Os
 
 .PHONY: picotcp
 picotcp:
