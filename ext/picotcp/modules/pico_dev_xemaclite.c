@@ -2,48 +2,19 @@
 #include "pico_dev_xemaclite.h"
 #include "pico_stack.h"
 
-#define BUF_SIZE 2048
-#define MDIOADDR         0x07E4
-#define MDIOADDR_OP      10
-#define MDIOADDR_OP_WR   0x0
-#define MDIOADDR_OP_RD   0x1
-#define MDIOADDR_PHYADDR 5
-#define MDIOADDR_REGADDR 0
-#define MDIOWR           0x07E8
-#define MDIORD           0x07EC
-#define MDIOCTRL         0x07F0
-#define MDIOCTRL_ENABLE  0x8
-#define MDIOCTRL_STATUS  0x1
-#define TX_PING_OFFSET   0x0
-#define TX_PING_LENGTH   0x07F4
-#define TX_PING_CONTROL  0x07FC
-#define TX_PONG_OFFSET   0x0800
-#define TX_PONG_LENGTH   0x0FF4
-#define TX_PONG_CONTROL  0x0FFC
-#define RX_PING_OFFSET   0x1000
-#define RX_PING_CONTROL  0x17FC
-#define RX_PONG_OFFSET   0x1800
-#define RX_PONG_CONTROL  0x1FFC
-
-#define CONTROL_STATUS_BIT 0x1
-
-uint8_t *xemaclite_base = (unsigned char*)0x60000000;
-
 static int pico_xemaclite_send(struct pico_device *dev, void *buf, int len)
 {
-    uint8_t rem[4] = {0};
-    IGNORE_PARAMETER(dev);
+    uint32_t txping_busy, txpong_busy;
+    volatile uint32_t *dword_src_buf, *dword_dst_buf;
+    uint32_t dword, ndwords;
+    struct xemaclite *xdev = (struct xemaclite*)dev;
+
     if (len > BUF_SIZE) {
         return 0;
     }
 
-    volatile uint32_t *txpingctrl_reg = (volatile uint32_t*)(xemaclite_base + TX_PING_CONTROL);
-    volatile uint32_t *txpongctrl_reg = (volatile uint32_t*)(xemaclite_base + TX_PONG_CONTROL);
-    volatile uint32_t *txpinglen_reg = (volatile uint32_t*)(xemaclite_base + TX_PING_LENGTH);
-    volatile uint32_t *txponglen_reg = (volatile uint32_t*)(xemaclite_base + TX_PONG_LENGTH);
-
-    uint32_t txping_busy = !!(*txpingctrl_reg & CONTROL_STATUS_BIT);
-    uint32_t txpong_busy = !!(*txpongctrl_reg & CONTROL_STATUS_BIT);
+    txping_busy = !!(xdev->ctl->tx_ping_tsr & CONTROL_STATUS_BIT);
+    txpong_busy = !!(xdev->ctl->tx_pong_tsr & CONTROL_STATUS_BIT);
 
     __sync_synchronize();
 
@@ -51,14 +22,14 @@ static int pico_xemaclite_send(struct pico_device *dev, void *buf, int len)
         return 0;
     }
 
-    int ndwords = len/4;
-    uint32_t *dword_src_buf = (uint32_t*)buf;
-    uint32_t *dword_dst_buf = 0;
+    ndwords = (uint32_t)len/4;
+    dword_src_buf = (uint32_t*)buf;
+    dword_dst_buf = 0;
 
     if (!txping_busy) {
-        dword_dst_buf = (uint32_t*)(xemaclite_base + TX_PING_OFFSET);
+        dword_dst_buf = xdev->ctl->tx_ping;
     } else if (!txpong_busy) {
-        dword_dst_buf = (uint32_t*)(xemaclite_base + TX_PONG_OFFSET);
+        dword_dst_buf = xdev->ctl->tx_pong;
     } else {
         printf("Weird status\n");
         return 0;
@@ -66,39 +37,34 @@ static int pico_xemaclite_send(struct pico_device *dev, void *buf, int len)
 
     // xilinx ethernetlite doesn't support byte enables
     // so we have to write 32-bit words
-    int dword;
     for (dword = 0; dword < ndwords; dword++) {
         *dword_dst_buf++ = *dword_src_buf++;
     }
 
-    if (len - ndwords*4 > 0) {
+    if (ndwords*4 < (uint32_t)len) {
         // handle the remainder
-        memcpy(rem, &buf[ndwords*4], len - ndwords*4);
-        *dword_dst_buf = *(uint32_t*)rem;
+        uint32_t rem = 0;
+        uint8_t *bbuf = (uint8_t*)buf;
+        memcpy(&rem, &bbuf[ndwords*4], (uint32_t)len - ndwords*4);
+        *dword_dst_buf = rem;
     }
 
     if (!txping_busy) {
-        *txpinglen_reg = len;
+        xdev->ctl->tx_ping_tplr = (uint32_t)len;
         __sync_synchronize();
-        *txpingctrl_reg |= CONTROL_STATUS_BIT;
+        xdev->ctl->tx_ping_tsr |= CONTROL_STATUS_BIT;
     } else if (!txpong_busy) {
-        *txponglen_reg = len;
+        xdev->ctl->tx_pong_tplr = (uint32_t)len;
         __sync_synchronize();
-        *txpongctrl_reg |= CONTROL_STATUS_BIT;
+        xdev->ctl->tx_pong_tsr |= CONTROL_STATUS_BIT;
     }
 
     return len;
 }
 
-static uint16_t get_type(uint8_t *buf)
+static uint16_t get_type(volatile uint8_t *buf)
 {
-    uint16_t type = 0;
-
-    type = buf[12];
-    type <<= 8;
-    type |= buf[13];
-
-    return type;
+    return (uint16_t)((buf[12] << 8) | buf[13]);
 }
 
 #define FCS_SIZE 4
@@ -109,25 +75,26 @@ static uint16_t get_type(uint8_t *buf)
 #define TYPE_ARP 0x0806
 #define TYPE_IPV4 0x0800
 
-static uint16_t ensure_min_length(uint16_t length)
+static uint32_t ensure_min_length(int length)
 {
     if (length < 60)
         return 60;
     else
-        return length;
+        return (uint32_t)length;
 }
 
-static uint16_t get_length(uint8_t *buf)
+static uint32_t get_length(volatile void *buf)
 {
-    uint16_t type = get_type(buf);
+    volatile uint8_t *bbuf = (volatile uint8_t*)buf;
+    uint16_t type;
+
+    type = get_type(bbuf);
 
     if (type == TYPE_ARP) {
         return ensure_min_length(ETHERNET_HEADER_SIZE + ARP_PACKET_SIZE) + FCS_SIZE;
     } else if (type == TYPE_IPV4) {
-        uint16_t ipv4_len = 0;
-        ipv4_len = buf[16];
-        ipv4_len <<= 8;
-        ipv4_len |= buf[17];
+        uint16_t ipv4_len;
+        ipv4_len = (uint16_t)((bbuf[16] << 8) | bbuf[17]);
 
         return ensure_min_length(ETHERNET_HEADER_SIZE + ipv4_len) + FCS_SIZE;
     } else {
@@ -137,25 +104,22 @@ static uint16_t get_length(uint8_t *buf)
 
 static int pico_xemaclite_poll(struct pico_device *dev, int loop_score)
 {
+    struct xemaclite *xdev = (struct xemaclite*)dev;
+
     if (loop_score <= 0) {
         return 0;
     }
 
-    volatile uint8_t *rxping_buf = (uint8_t*)(xemaclite_base + RX_PING_OFFSET);
-    volatile uint8_t *rxpong_buf = (uint8_t*)(xemaclite_base + RX_PONG_OFFSET);
-    volatile uint32_t *rxpingctrl_reg = (uint32_t*)(xemaclite_base + RX_PING_CONTROL);
-    volatile uint32_t *rxpongctrl_reg = (uint32_t*)(xemaclite_base + RX_PONG_CONTROL);
-
-    if((*rxpingctrl_reg & CONTROL_STATUS_BIT) && loop_score > 0) {
-        pico_stack_recv(dev, rxping_buf, get_length(rxping_buf));
-        *rxpingctrl_reg &= ~CONTROL_STATUS_BIT;
+    if((xdev->ctl->rx_ping_rsr & CONTROL_STATUS_BIT) && loop_score > 0) {
+        pico_stack_recv(dev, xdev->ctl->rx_ping, get_length(xdev->ctl->rx_ping));
+        xdev->ctl->rx_ping_rsr &= ~CONTROL_STATUS_BIT;
 
         loop_score--;
     }
 
-    if((*rxpongctrl_reg & CONTROL_STATUS_BIT) && loop_score > 0) {
-        pico_stack_recv(dev, rxpong_buf, get_length(rxpong_buf));
-        *rxpongctrl_reg &= ~CONTROL_STATUS_BIT;
+    if((xdev->ctl->rx_pong_rsr & CONTROL_STATUS_BIT) && loop_score > 0) {
+        pico_stack_recv(dev, xdev->ctl->rx_pong, get_length(xdev->ctl->rx_pong));
+        xdev->ctl->rx_pong_rsr &= ~CONTROL_STATUS_BIT;
 
         loop_score--;
     }
@@ -163,65 +127,63 @@ static int pico_xemaclite_poll(struct pico_device *dev, int loop_score)
     return loop_score;
 }
 
-struct pico_device *pico_xemaclite_create(void)
+struct pico_device *pico_xemaclite_create(uint32_t address)
 {
     uint8_t mac[6] = {0x00, 0x00, 0x5E, 0x00, 0xFA, 0xCE};
-    struct pico_device *xemaclite = PICO_ZALLOC(sizeof(struct pico_device));
-    if (!xemaclite) {
+    struct xemaclite *xdev = PICO_ZALLOC(sizeof(struct xemaclite));
+    if (!xdev) {
         return NULL;
     }
 
-    if( 0 != pico_device_init(xemaclite, "xemaclite", mac)) {
+    xdev->ctl = (volatile struct xemaclite_ctl*)address;
+
+    if( 0 != pico_device_init(&xdev->dev, "xemaclite", mac)) {
         dbg ("Xilinx EthernetLite init failed.\n");
-        pico_device_destroy(xemaclite);
+        pico_device_destroy(&xdev->dev);
+        PICO_FREE(xdev);
         return NULL;
     }
 
-    xemaclite->send = pico_xemaclite_send;
-    xemaclite->poll = pico_xemaclite_poll;
-    dbg("Device %s created.\n", xemaclite->name);
-    return xemaclite;
+    xdev->dev.send = pico_xemaclite_send;
+    xdev->dev.poll = pico_xemaclite_poll;
+    dbg("Device %s created.\n", xdev->dev.name);
+    return (struct pico_device*)xdev;
 }
 
-void pico_xemaclite_mdio_write(uint8_t phyaddr, uint8_t regaddr, uint16_t data)
+void pico_xemaclite_mdio_write(uint32_t address, uint8_t phyaddr, uint8_t regaddr, uint16_t data)
 {
+    volatile struct xemaclite_ctl *xdev_ctl = (struct xemaclite_ctl*)address;
+
     phyaddr &= 0x1F;
     regaddr &= 0x1F;
 
-    volatile uint32_t *mdioaddr_reg = (uint32_t*)(xemaclite_base + MDIOADDR);
-    volatile uint32_t *mdiowr_reg = (uint32_t*)(xemaclite_base + MDIOWR);
-    volatile uint32_t *mdioctrl_reg = (uint32_t*)(xemaclite_base + MDIOCTRL);
+    xdev_ctl->mdioaddr = (MDIOADDR_OP_WR << MDIOADDR_OP)         |
+                         ((uint32_t)phyaddr << MDIOADDR_PHYADDR) |
+                         ((uint32_t)regaddr << MDIOADDR_REGADDR);
+    xdev_ctl->mdiowr = data;
+    xdev_ctl->mdioctrl |= MDIOCTRL_ENABLE;
+    xdev_ctl->mdioctrl |= MDIOCTRL_STATUS;
 
-    *mdioaddr_reg = (MDIOADDR_OP_WR << MDIOADDR_OP) |
-                    (phyaddr << MDIOADDR_PHYADDR)   |
-                    (regaddr << MDIOADDR_REGADDR);
-    *mdiowr_reg = data;
-    *mdioctrl_reg |= MDIOCTRL_ENABLE;
-    *mdioctrl_reg |= MDIOCTRL_STATUS;
-
-    while (*mdioctrl_reg & MDIOCTRL_STATUS);
+    while (xdev_ctl->mdioctrl & MDIOCTRL_STATUS);
 }
 
-uint16_t pico_xemaclite_mdio_read(uint8_t phyaddr, uint8_t regaddr)
+uint16_t pico_xemaclite_mdio_read(uint32_t address, uint8_t phyaddr, uint8_t regaddr)
 {
+    volatile struct xemaclite_ctl *xdev_ctl = (struct xemaclite_ctl*)address;
     uint16_t data;
 
     phyaddr &= 0x1F;
     regaddr &= 0x1F;
 
-    volatile uint32_t *mdioaddr_reg = (uint32_t*)(xemaclite_base + MDIOADDR);
-    volatile uint32_t *mdiord_reg = (uint32_t*)(xemaclite_base + MDIORD);
-    volatile uint32_t *mdioctrl_reg = (uint32_t*)(xemaclite_base + MDIOCTRL);
+    xdev_ctl->mdioaddr = (MDIOADDR_OP_RD << MDIOADDR_OP)         |
+                         ((uint32_t)phyaddr << MDIOADDR_PHYADDR) |
+                         ((uint32_t)regaddr << MDIOADDR_REGADDR);
+    xdev_ctl->mdioctrl |= MDIOCTRL_ENABLE;
+    xdev_ctl->mdioctrl |= MDIOCTRL_STATUS;
 
-    *mdioaddr_reg = (MDIOADDR_OP_RD << MDIOADDR_OP) |
-                    (phyaddr << MDIOADDR_PHYADDR)   |
-                    (regaddr << MDIOADDR_REGADDR);
-    *mdioctrl_reg |= MDIOCTRL_ENABLE;
-    *mdioctrl_reg |= MDIOCTRL_STATUS;
+    while (xdev_ctl->mdioctrl & MDIOCTRL_STATUS);
 
-    while (*mdioctrl_reg & MDIOCTRL_STATUS);
-
-    data = *mdiord_reg & 0xFFFF;
+    data = xdev_ctl->mdiord & 0xFFFF;
 
     return data;
 }

@@ -502,6 +502,8 @@ static int wolfSend(WOLFSSL *ssl, char *buf, int sz, void *ctx)
     }
 }
 
+#define XEMACLITE_ADDRESS 0x60000000
+
 int main(int argc, char *argv[]){
     uint16_t telnet_port = short_be(23);
     uint16_t tls_port = short_be(443);
@@ -515,7 +517,7 @@ int main(int argc, char *argv[]){
 
     do {
         ECALL_YIELD();
-        bmsr = pico_xemaclite_mdio_read(PHY_ADDRESS, BMSR_REG);
+        bmsr = pico_xemaclite_mdio_read(XEMACLITE_ADDRESS, PHY_ADDRESS, BMSR_REG);
     } while ((bmsr & BMSR_LINK_STATUS) == 0);
 
     qinit(&mzmsg_to1);
@@ -528,7 +530,7 @@ int main(int argc, char *argv[]){
 
     printf("pico stack initialized\n");
 
-    dev = pico_xemaclite_create();
+    dev = pico_xemaclite_create(XEMACLITE_ADDRESS);
     if (!dev) {
         printf("Could not initialize device\n");
         return -1;
