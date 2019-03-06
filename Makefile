@@ -54,18 +54,18 @@ export RISCV_ABI
 
 .PHONY: all 
 all: 
-	$(MAKE) -C zone1
-	$(MAKE) -C zone2 IPADDR="$(IPADDR)" NETMASK="$(NETMASK)"
-	$(MAKE) -C zone3
-	$(MAKE) -C zone4
+	"$(MAKE)" -C zone1
+	"$(MAKE)" -C zone2 IPADDR="$(IPADDR)" NETMASK="$(NETMASK)"
+	"$(MAKE)" -C zone3
+	"$(MAKE)" -C zone4
 	java -jar ext/multizone/multizone.jar -c bsp/$(BOARD)/multizone.cfg zone1/zone1.hex zone2/zone2.hex zone3/zone3.hex zone4/zone4.hex --arch=$(BOARD)
 
 .PHONY: clean
 clean: 
-	$(MAKE) -C zone1 clean
-	$(MAKE) -C zone2 clean
-	$(MAKE) -C zone3 clean
-	$(MAKE) -C zone4 clean
+	"$(MAKE)" -C zone1 clean
+	"$(MAKE)" -C zone2 clean
+	"$(MAKE)" -C zone3 clean
+	"$(MAKE)" -C zone4 clean
 	rm -f multizone.hex
 
 
@@ -86,6 +86,7 @@ GDB_PORT ?= 3333
 GDB_LOAD_ARGS ?= --batch
 GDB_LOAD_CMDS += -ex "set mem inaccessible-by-default off"
 GDB_LOAD_CMDS += -ex "set remotetimeout 240"
+GDB_LOAD_CMDS += -ex "set arch riscv:rv32"
 GDB_LOAD_CMDS += -ex "target extended-remote localhost:$(GDB_PORT)"
 GDB_LOAD_CMDS += -ex "monitor reset halt"
 GDB_LOAD_CMDS += -ex "monitor flash protect 0 64 last off"

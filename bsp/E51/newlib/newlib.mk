@@ -32,12 +32,11 @@ CFLAGS += -msmall-data-limit=8
 CFLAGS += -mdiv
 
 HEX = $(subst .elf,.hex,$(TARGET))
-RISCV_OBJCOPY := $(dir $(CC))$(subst -gcc,-objcopy,$(notdir $(CC)))
 CLEAN_OBJS += $(HEX) 
 
 $(TARGET): $(LINK_OBJS) $(LINK_DEPS)
 	$(CC) $(CFLAGS) $(INCLUDES) $(LINK_OBJS) -o $@ $(LDFLAGS)
-	$(RISCV_OBJCOPY) -O ihex $(TARGET) $(HEX) --gap-fill 0x00
+	$(OBJCOPY) -O ihex $(TARGET) $(HEX) --gap-fill 0x00
 
 $(ASM_OBJS): %.o: %.S $(HEADERS)
 	$(CC) $(CFLAGS) $(INCLUDES) -c -o $@ $<
