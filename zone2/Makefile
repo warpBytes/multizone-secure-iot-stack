@@ -58,7 +58,6 @@ C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/integer.c
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/logging.c
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/md5.c
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/memory.c
-C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/misc.c
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/pkcs12.c
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/pkcs7.c
 C_SRCS += $(WOLFSSL_SRC_DIR)/wolfcrypt/src/poly1305.c
