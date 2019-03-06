@@ -423,7 +423,7 @@ extern "C" {
 #endif
 
 /* Memory callbacks */
-#if 1
+#if 0
     #undef  USE_WOLFSSL_MEMORY
     #define USE_WOLFSSL_MEMORY
 
