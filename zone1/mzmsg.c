@@ -36,6 +36,7 @@ int mzmsg_write(mzmsg_t *mzmsg, char *buf, size_t len){
         memcpy(data, buf, transfer);
 
         if (ECALL_SEND(mzmsg->zone, data)) {
+            printf("Sent message to zone 2\n");
             i += transfer;
             buf += transfer;
         }

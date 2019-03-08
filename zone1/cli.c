@@ -2,7 +2,6 @@
 
 #include <limits.h>
 #include <cli.h>
-#include <robot.h>
 #include <mzmsg.h>
 
 #define PRINT_BUFFER_SIZE   128
@@ -446,39 +445,7 @@ static char history[CMD_LINE_SIZE+1]="";
 			}
 		}
 
-
-		uint32_t ulNotificationValue = 0;
-
-		if( xTaskNotifyWait( 0x00, 0x00, &ulRobotValue, 0) == pdTRUE ) {
-			//mzmsg_write(&zone2, "\e7\e[2K", 6); // save curs pos // 2K clear entire line - cur pos dosn't change
-			switch(ulRobotValue) {
-				case 0: sprintf(print_buffer, "\rZ1 > USB DEVICE DETACH\r\n"); 
-						mzmsg_write(&zone2, print_buffer, strlen(print_buffer)); 
-						break;
-				case 1: sprintf(print_buffer, "\rZ1 > USB DEVICE ATTACH VID=0x1267 PID=0x0000\r\n");
-						mzmsg_write(&zone2, print_buffer, strlen(print_buffer)); 
-						mzmsg_write(&zone2, (char*)robotinfo_msg, strlen(robotinfo_msg)); 
-						break;
-			}
-			mzmsg_write(&zone2, "\nZ1 > ", 6);
-			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
-			//mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
-		}
-
-		if( xQueueReceive( xbuttons_queue, &ulNotificationValue, 0) == pdTRUE ) {
-			mzmsg_write(&zone2, "\e7\e[2K", 6); // save curs pos // 2K clear entire line - cur pos dosn't change
-			switch(ulNotificationValue) {
-				case 216 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 16 [BTN0]\r\n"); break;
-				case 217 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 17 [BTN1]\r\n"); break;
-				case 218 : sprintf(print_buffer, "\rZ1 > CLINT IRQ 18 [BTN2]\r\n"); break;
-			}
-			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
-			mzmsg_write(&zone2, "\nZ1 > ", 6);
-			mzmsg_write(&zone2, &cmd_line[0], strlen(cmd_line));
-			mzmsg_write(&zone2, "\e8\e[2B", 6);   // restore curs pos // curs down down
-		}
-
-		taskYIELD();
+		ECALL_YIELD();
 
 	} // while(1)
 
@@ -565,7 +532,7 @@ void cliTask( void *pvParameters){
 						case '>' : 	
 						case '<' : 
 						case '1' : 
-						case '0' : 	xQueueSend( robot_queue, &c, 0 ); 
+						case '0' :
 									break;
 						default  :	
 									msg[0]=(unsigned int)*tk3; msg[1]=0; msg[2]=0; msg[3]=0;
@@ -615,6 +582,6 @@ void cliTask( void *pvParameters){
 			mzmsg_write(&zone2, print_buffer, strlen(print_buffer));
 		}
 
-		taskYIELD();
+		ECALL_YIELD();
     }
 }

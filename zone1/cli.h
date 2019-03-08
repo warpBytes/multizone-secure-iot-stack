@@ -13,11 +13,6 @@
 #include <platform.h>
 #include <libhexfive.h>
 
-#include <FreeRTOS.h>
-#include <queue.h> 
-
-extern QueueHandle_t xbuttons_queue;
-
 void cliTask( void *pvParameters);
 void cli_exceptions(unsigned long mcause, unsigned long mtval, unsigned long mepc);
 
