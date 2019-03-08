@@ -22,16 +22,6 @@
 
 #define NUM_PING 10
 
-#define MZMSG_CHARS 4
-#define ACK         0
-#define IND         1
-#define CTL         2
-#define DAT         3
-#define CTL_ACK     (1 << 0)
-#define CTL_DAT     (1 << 1)
-#define CTL_RST     (1 << 2)
-#define CTL_PSH     (1 << 3)
-
 #define MAX_QUEUE_LEN 64
 
 struct queue {
@@ -180,71 +170,32 @@ void cb_telnet(uint16_t ev, struct pico_socket *s)
 
 void mzmsg_proc(struct queue *txq, struct queue *rxq)
 {
-    static int ack_pending = 0;
-    static int ack_index = 0;
-    static int flush = 0;
-    static int resend = 0;
-    static int msg[4] = {0,0,0,0};
-    static int msg_out[4] = {-1,0,0,0};
-    int tmp_msg[4] = {0,0,0,0};
+    int recv;
+    char data[16];
+    char *pdata;
 
-    ECALL_RECV(1, (void*)tmp_msg);
+    if (qfree(txq) >= 16) {
+        if (ECALL_RECV(1, data)) {
+            recv = 0;
+            pdata = data;
+            while (*pdata != 0 && recv < 16) {
+                qinsert(txq, *pdata);
+                recv++;
+                pdata++;
+            }
 
-    if (!(tmp_msg[0] == 0 && tmp_msg[1] == 0 && tmp_msg[2] == 0 && tmp_msg[3] == 0)) {
-        memcpy(msg, tmp_msg, 4*sizeof(int));
-    }
-
-    if ((msg[CTL] & CTL_RST) != 0) {
-        ack_pending = 0;
-        ack_index = 0;
-        memcpy(msg_out, (int[]){-1,0,0,0}, 4*sizeof(int));
-        ECALL_SEND(1, (int[]){0,0,CTL_RST,0});
-    }
-
-    if ((msg[CTL] & CTL_DAT) != 0) {
-        if (msg[IND] == (msg_out[ACK] + 1)) {
-            if (qfree(txq) >= MZMSG_CHARS) {
-                int ack = 0;
-                char *data = (char*)&msg[DAT];
-
-                while (*data != 0 && ack < MZMSG_CHARS) {
-                    qinsert(txq, *data);
-                    ack++;
-                    data++;
-                }
-
-                msg_out[CTL] |= CTL_ACK;
-                msg_out[ACK] = msg[IND];
-                flush = 1;
-
-                if ((msg[CTL] & CTL_PSH) != 0) {
-                    txq->flush = 1;
-                }
+            if (recv < 16) {
+                txq->flush = 1;
             }
         }
     }
 
-    if (!ack_pending && rxq->flush) {
-        msg_out[CTL] |= CTL_DAT;
-        msg_out[IND] = ack_index;
-        memcpy(&msg_out[DAT], qfront(rxq), 1);
-        rxq->rp += 1;
-        if (qempty(rxq))
-            rxq->flush = 0;
-        flush = 1;
-        ack_pending = 1;
-    }
-
-    if (((msg[CTL] & CTL_ACK) != 0) & ack_pending) {
-        if (msg[ACK] >= ack_index) {
-            ack_index = msg[ACK] + 1;
-            ack_pending = 0;
+    if (!qempty(rxq)) {
+        data[0] = *qfront(rxq);
+        data[1] = 0;
+        if (ECALL_SEND(1, data)) {
+            rxq->rp++;
         }
-    }
-
-    if (flush != 0) {
-        flush = 0;
-        ECALL_SEND(1, (void*)msg_out);
     }
 }
 
@@ -253,7 +204,7 @@ void telnet_client(struct pico_socket *client, struct queue *txq, struct queue *
     char buf[32];
     int bytes = 0;
 
-    if (qfree(rxq) < MZMSG_CHARS || rxq->flush) {
+    if (qfree(rxq) < 16 || rxq->flush) {
         bytes = pico_socket_write(sock_client, qfront(rxq), qcontlen(rxq));
         if (bytes > 0) {
             rxq->rp += bytes;
@@ -388,7 +339,7 @@ void tls_client(WOLFSSL *ssl, struct queue *txq, struct queue *rxq)
     if (ret != WOLFSSL_SUCCESS) {
         ret = wolfSSL_accept(ssl);
     } else {
-        if (qfree(rxq) < MZMSG_CHARS || rxq->flush) {
+        if (qfree(rxq) < 16 || rxq->flush) {
             bytes = wolfSSL_write(ssl, qfront(rxq), qcontlen(rxq));
             if (bytes > 0) {
                 rxq->rp += bytes;
@@ -436,8 +387,10 @@ static int eccSign(WOLFSSL* ssl,
     msg[1] = inSz;
     msg[2] = *outSz;
     msg[3] = 0;
-    ECALL_SEND(3, msg);
-    ECALL_YIELD();
+
+    while (!ECALL_SEND(3, msg)) {
+        ECALL_YIELD();
+    }
 
     i = 0;
     while (i < inSz) {
@@ -449,26 +402,26 @@ static int eccSign(WOLFSSL* ssl,
 
         msg[0] = len;
         memcpy(&msg[1], in + i, len);
-        ECALL_SEND(3, msg);
-        ECALL_YIELD();
+        while (!ECALL_SEND(3, msg)) {
+            ECALL_YIELD();
+        }
         i += len;
     }
 
-    do {
+    while (!ECALL_RECV(3, msg)) {
         ECALL_YIELD();
-        ECALL_RECV(3, msg);
-    } while(msg[0] != 1);
+    }
+
     ret = msg[1];
     *outSz = msg[2];
 
     i = 0;
     while (i < *outSz) {
-        ECALL_YIELD();
-        ECALL_RECV(3, msg);
-        if (msg[0] > 0) {
-            memcpy(out+i, &msg[1], msg[0]);
-            i += msg[0];
+        while (!ECALL_RECV(3, msg)) {
+            ECALL_YIELD();
         }
+        memcpy(out+i, &msg[1], msg[0]);
+        i += msg[0];
     }
 
     return ret;
@@ -619,8 +572,8 @@ int main(int argc, char *argv[]){
 
         pico_stack_tick();
 
-        ECALL_RECV(4, msg);
-        if (msg[0]) ECALL_SEND(4, msg);
+        if (ECALL_RECV(4, msg))
+            ECALL_SEND(4, msg);
         ECALL_YIELD();
     }
 

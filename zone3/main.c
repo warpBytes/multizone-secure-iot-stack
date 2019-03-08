@@ -53,12 +53,11 @@ void eccSign(unsigned int inSz, unsigned int outSz)
 
     i = 0;
     while (i < inSz) {
-        ECALL_YIELD();
-        ECALL_RECV(2, msg);
-        if (msg[0] > 0) {
-            memcpy(in+i, &msg[1], msg[0]);
-            i += msg[0];
+        while (!ECALL_RECV(2, msg)) {
+            ECALL_YIELD();
         }
+        memcpy(in+i, &msg[1], msg[0]);
+        i += msg[0];
     }
 
     ret = wc_ecc_sign_hash(in, inSz, out, &outSz, &rng, &eccKey);
@@ -66,8 +65,10 @@ void eccSign(unsigned int inSz, unsigned int outSz)
     msg[1] = ret;
     msg[2] = outSz;
     msg[3] = 0;
-    ECALL_SEND(2, msg);
-    ECALL_YIELD();
+
+    while (!ECALL_SEND(2, msg)) {
+        ECALL_YIELD();
+    }
 
     i = 0;
     while (i < outSz) {
@@ -79,8 +80,9 @@ void eccSign(unsigned int inSz, unsigned int outSz)
 
         msg[0] = len;
         memcpy(&msg[1], out + i, len);
-        ECALL_SEND(2, msg);
-        ECALL_YIELD();
+        while (!ECALL_SEND(2, msg)) {
+            ECALL_YIELD();
+        }
         i += len;
     }
 
@@ -114,20 +116,22 @@ int main(void)
     while (1) {
         int msg[4];
 
-        ECALL_RECV(2, msg);
-        switch (msg[0]) {
-            case 1:
-                eccSign((unsigned int)msg[1], (unsigned int)msg[2]);
-                break;
+        if (ECALL_RECV(2, msg)) {
+            switch (msg[0]) {
+                case 1:
+                    eccSign((unsigned int)msg[1], (unsigned int)msg[2]);
+                    break;
 
-            default:
-                break;
+                default:
+                    break;
+            }
         }
 
-        ECALL_RECV(1, msg);
-        if (msg[0]) ECALL_SEND(1, msg);
-        ECALL_RECV(4, msg);
-        if (msg[0]) ECALL_SEND(4, msg);
+        if (ECALL_RECV(1, msg))
+            ECALL_SEND(1, msg);
+        if (ECALL_RECV(4, msg))
+            ECALL_SEND(4, msg);
+
         ECALL_YIELD();
     }
 }

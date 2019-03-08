@@ -46,7 +46,6 @@ static mzmsg_t zone2;
 
 void restart(){
 	ECALL_CSRC_MIE();
-	mzmsg_reset(&zone2);
 	asm ("j _start");
 }
 
@@ -405,8 +404,7 @@ static char history[CMD_LINE_SIZE+1]="";
 
 		int msg[4]={0,0,0,0};
 		// poll & print Zone1 incoming messages
-		ECALL_RECV(1, msg);
-		if (msg[0]){
+		if (ECALL_RECV(1, msg)){;
 			switch (msg[0]) {
 				case 'p' :	msg[0] = 'P'; ECALL_SEND(1, (void*)msg);
 							break;
@@ -421,8 +419,7 @@ static char history[CMD_LINE_SIZE+1]="";
 		}
 
 		// poll & print Zone3 incoming messages
-		ECALL_RECV(3, msg);
-		if (msg[0]){
+		if (ECALL_RECV(3, msg)){
 			switch (msg[0]) {
 				case 'p' :	mzmsg_write(&zone2, "\e7\e[2K", 6);
 							mzmsg_write(&zone2, "\rZ3 > pong\r\n", 12);
@@ -435,8 +432,7 @@ static char history[CMD_LINE_SIZE+1]="";
 		}
 
 		// poll & print Zone4 incoming messages
-		ECALL_RECV(4, msg);
-		if (msg[0]){
+		if (ECALL_RECV(4, msg)){
 			switch (msg[0]) {
 				case 'p' :	msg[0] = 'P'; ECALL_SEND(4, (void*)msg);
 							break;
